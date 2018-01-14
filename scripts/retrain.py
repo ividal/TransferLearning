@@ -111,9 +111,9 @@ def variable_summaries(var):
         tf.summary.scalar('mean', mean)
         with tf.name_scope('stddev'):
             stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-        tf.summary.scalar('stddev', stddev)
-        tf.summary.scalar('max', tf.reduce_max(var))
-        tf.summary.scalar('min', tf.reduce_min(var))
+        #tf.summary.scalar('stddev', stddev)
+        #tf.summary.scalar('max', tf.reduce_max(var))
+        #tf.summary.scalar('min', tf.reduce_min(var))
     tf.summary.histogram('histogram', var)
 
 
@@ -288,11 +288,13 @@ def main(_):
 
         # Merge all the summaries and write them out to the summaries_dir
         merged = tf.summary.merge_all()
-        train_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/train',
+        import time
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        train_writer = tf.summary.FileWriter("{}/{}/train".format(FLAGS.summaries_dir, timestamp),
                                              sess.graph)
 
-        validation_writer = tf.summary.FileWriter(
-            FLAGS.summaries_dir + '/validation')
+        validation_writer = tf.summary.FileWriter("{}/{}/validation".format(FLAGS.summaries_dir,
+                                                                            timestamp))
 
         # Set up all our weights to their initial default values.
         init = tf.global_variables_initializer()
@@ -481,9 +483,8 @@ if __name__ == '__main__':
         default='mobilenet_1.0_224',
         help="""\
       Which model architecture to use. For faster or smaller models, choose a MobileNet with the
-      form 'mobilenet_<parameter size>_<input_size>'. For example,
-      'mobilenet_1.0_224' will pick a model that is 17 MB in size and takes 224
-      pixel input images.\
+      form 'mobilenet_<parameter size>_<input_size>'. For example, 'mobilenet_1.0_224' will pick 
+      a model that is 17 MB in size and takes 224 pixel input images.\
       """)
     parser.add_argument(
         '--max_num_images_per_class',
