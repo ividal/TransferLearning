@@ -211,16 +211,14 @@ def maybe_download_and_extract(data_url, dest_directory):
     model_folder = os.path.join(dest_directory, model_name)
     model_full_path = os.path.join(model_folder, "frozen_graph.pb")
 
-    tf.logging.info("Expecting:\n\t{}\n\t{}\nor\t{}".format(dest_directory, model_folder,
-                                                             filepath))
+    tf.logging.info("Expecting:\n\t{}\nor\t{}".format(model_folder, filepath))
 
-    if not os.path.exists(dest_directory):
-        tf.logging.info('Model dir {} missing, creating it.'.format(dest_directory))
-        os.makedirs(dest_directory)
+    ensure_dir_exists(dest_directory)
+    ensure_dir_exists(model_folder)
 
     if not os.path.exists(model_full_path):
         if not os.path.exists(filepath):
-            tf.logging.info('Model tar {} missing, downloading it.'.format(filepath))
+            tf.logging.info('Tarfile {} missing, downloading it.'.format(filepath))
 
             def _progress(count, block_size, total_size):
                 sys.stdout.write('\r>> Downloading %s %.1f%%' %
@@ -246,6 +244,7 @@ def ensure_dir_exists(dir_name):
       dir_name: Path string to the folder we want to create.
     """
     if not os.path.exists(dir_name):
+        tf.logging.info('Folder {} missing, creating it.'.format(dir_name))
         os.makedirs(dir_name)
 
 
@@ -485,9 +484,7 @@ def save_graph_to_file(sess, graph, graph_file_name, final_tensor_name):
 
 def prepare_file_system(summaries_dir):
     # Setup the directory we'll write summaries to for TensorBoard
-    if tf.gfile.Exists(summaries_dir):
-        tf.gfile.DeleteRecursively(summaries_dir)
-    tf.gfile.MakeDirs(summaries_dir)
+    ensure_dir_exists(summaries_dir)
     return
 
 
