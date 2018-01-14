@@ -205,27 +205,38 @@ def maybe_download_and_extract(data_url, dest_directory):
       data_url: Web location of the tar file containing the pretrained model.
       dest_directory: Folder where the pretrained model will be stored.
     """
+    filename = data_url.split('/')[-1]
+    filepath = os.path.join(dest_directory, filename)
+    model_name = os.path.splitext(filename)[0].strip("_frozen")
+    model_folder = os.path.join(dest_directory, model_name)
+    model_full_path = os.path.join(model_folder, "frozen_graph.pb")
+
+    tf.logging.info("Expecting:\n\t{}\n\t{}\nor\t{}".format(dest_directory, model_folder,
+                                                             filepath))
+
     if not os.path.exists(dest_directory):
         tf.logging.info('Model dir {} missing, creating it.'.format(dest_directory))
         os.makedirs(dest_directory)
 
-    filename = data_url.split('/')[-1]
-    filepath = os.path.join(dest_directory, filename)
-    if not os.path.exists(filepath):
-        def _progress(count, block_size, total_size):
-            sys.stdout.write('\r>> Downloading %s %.1f%%' %
-                             (filename,
-                              float(count * block_size) / float(total_size) * 100.0))
-            sys.stdout.flush()
+    if not os.path.exists(model_full_path):
+        if not os.path.exists(filepath):
+            tf.logging.info('Model tar {} missing, downloading it.'.format(filepath))
 
-        filepath, _ = urllib.request.urlretrieve(data_url, filepath, _progress)
-        print()
-        statinfo = os.stat(filepath)
-        tf.logging.info('Successfully downloaded {}, {} bytes'.format(filename, statinfo.st_size))
-        print('Extracting file from ', filepath)
+            def _progress(count, block_size, total_size):
+                sys.stdout.write('\r>> Downloading %s %.1f%%' %
+                                 (filename,
+                                  float(count * block_size) / float(total_size) * 100.0))
+                sys.stdout.flush()
+
+            filepath, _ = urllib.request.urlretrieve(data_url, filepath, _progress)
+            print()
+            statinfo = os.stat(filepath)
+            tf.logging.info('Successfully downloaded {}, {} bytes'.format(filename, statinfo.st_size))
+
+        tf.logging.info('Extracting file from {}'.format(filepath))
         tarfile.open(filepath, 'r:gz').extractall(dest_directory)
-    else:
-        print('Not extracting or downloading files, model already present in disk')
+        assert os.path.exists(model_full_path), "Unable to extract model: {}".format(
+            model_full_path)
 
 
 def ensure_dir_exists(dir_name):
@@ -504,7 +515,7 @@ def create_model_info(architecture):
             tf.logging.error("Couldn't understand architecture name '%s'",
                              architecture)
             return None
-        version_string = parts[1]
+        version_string = parts[2]
         if (version_string != '1.0' and version_string != '0.75' and
                 version_string != '0.50' and version_string != '0.25'):
             tf.logging.error(
@@ -512,7 +523,7 @@ def create_model_info(architecture):
         but found '%s' for architecture '%s'""",
                 version_string, architecture)
             return None
-        size_string = parts[2]
+        size_string = parts[3]
         if (size_string != '224' and size_string != '192' and
                 size_string != '160' and size_string != '128'):
             tf.logging.error(
