@@ -2,12 +2,12 @@
 
 ### How do I get set up? ###
 
-1. Make sure you either:
-  -- create a virtual environment
-  -- or are running a docker container with docker ([see here](https//hub.docker.com/r/tensorflow/tensorflow/))
+1. Make sure you either: 
+    * create a virtual environment 
+    * or are running a docker container with docker ([see here](https//hub.docker.com/r/tensorflow/tensorflow/))
 2. Install the dependencies with the `requirements.txt` in this repo.
 
-Quick start:
+Quick start with a virtual environment:
 ```sh
 $ virtualenv -p $(which python3) py-tf
 $ source py-tf/bin/activate
@@ -33,6 +33,8 @@ Notice tf_files/training_summaries contains the following structure:
 
 This way you will be able to compare the loss function and other metrics from different trainings in the same Tensoboard
 plot.
+
+![tensorboard](doc/tensorboard_multiple.png)
 
 ### License ###
 I'm redistributing modifications under the same Apache 2.0 license from the original Tensorflow code.
