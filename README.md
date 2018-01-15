@@ -1,6 +1,6 @@
 # Transfer Learning 101
 
-### How do I get set up? ###
+## How do I get set up? ###
 
 1. Make sure you either: 
     * create a virtual environment 
@@ -18,19 +18,18 @@ $ pip install -r requirements.txt
 
 
 
-### Finding your way ###
+## Finding your way ###
 `sh` is your entry point; there's a bash script to showcase the usage of the retraining code
 
 `scripts` contains the retraining code; notice there have been some modifications to the original Tensorflow github script, 
 but the interface is the same.
 
 `tf_files` contains data, models and tensorboard logs (training_summaries), just
- like in the original Tensorflow Transfer Learning [tutorial](https://www
- .tensorflow.org/tutorials/image_retraining). However, you will be able to see
+ like in the original Tensorflow Transfer Learning [tutorial](https://www.tensorflow.org/tutorials/image_retraining). However, you will be able to see
  stacked plots on the Tensorboard.
 
 
-#### Tensorboard ####
+## Tensorboard ####
 Notice tf_files/training_summaries contains the following structure:
    * architecture
       * training_timestamp
@@ -49,5 +48,35 @@ start your Tensorboard with:
 tensorboard --logdir=tf_files/training_summaries &
 ```
 
-### License ###
+Go with your browser to http://localhost:6006 and enjoy!
+
+
+## Plan for the workshop
+
+We'll be switching back and forth from command line (to launch trainings) to
+Tensorboard, to see what's going on.
+
+So, specifically:
+* Tweak parameters inside sh/retrain.sh and launch with `sh/retrain.sh`
+* Launch Tensoboard only once with `tensorboard
+--logdir=tf_files/training_summaries`
+* Don't forget to see what the loss function looks like and the difference between training and validation loss!
+
+
+### Tweaks we'll play with
+
+We'll launch trainings with different values for the following parameters and
+discuss what is going on and why things are breaking.
+
+#### Training steps
+#### Learning rate
+#### Training batch size
+#### Training dataset size
+#### Network parameters
+#### Image resolution
+
+Don't forget to check what the loss function ("Cross-entropy") looks like and
+how validation and training loss compare for each experiment!
+
+## License ###
 Modifications are under the same Apache license as the original Tensorflow code.
