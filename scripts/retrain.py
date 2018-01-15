@@ -343,9 +343,8 @@ def main(_):
                     feed_dict={bottleneck_input: validation_bottlenecks,
                                ground_truth_input: validation_ground_truth})
                 validation_writer.add_summary(validation_summary, i)
-                tf.logging.info('%s: Step %d: Validation accuracy = %.1f%% (N=%d)' %
-                                (datetime.now(), i, validation_accuracy * 100,
-                                 len(validation_bottlenecks)))
+                tf.logging.info('%s: Step %d: Validation accuracy = %.1f%% ' %
+                                (datetime.now(), i, validation_accuracy * 100))
 
         # We've completed all our training, so run a final test evaluation on
         # some new images we haven't used before.
