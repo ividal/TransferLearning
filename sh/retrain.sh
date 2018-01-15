@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 export IMAGE_SIZE=224
 export WIDTH=1.0
