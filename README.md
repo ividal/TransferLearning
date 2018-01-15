@@ -53,30 +53,20 @@ Go with your browser to http://localhost:6006 and enjoy!
 
 ## Plan for the workshop
 
+Check the wiki!
+
+Recap:
+
 We'll be switching back and forth from command line (to launch trainings) to
 Tensorboard, to see what's going on.
 
-So, specifically:
-* Tweak parameters inside sh/retrain.sh and launch with `sh/retrain.sh`
-* Launch Tensoboard only once with `tensorboard
---logdir=tf_files/training_summaries`
-* Don't forget to see what the loss function looks like and the difference between training and validation loss!
+* Tweak parameters inside sh/retrain.sh and launch with
+```
+sh/retrain.sh
+```
+* Launch Tensoboard only once with 
+```tensorboard --logdir=tf_files/training_summaries```
 
-
-### Tweaks we'll play with
-
-We'll launch trainings with different values for the following parameters and
-discuss what is going on and why things are breaking.
-
-#### Training steps
-#### Learning rate
-#### Training batch size
-#### Training dataset size
-#### Network parameters
-#### Image resolution
-
-Don't forget to check what the loss function ("Cross-entropy") looks like and
-how validation and training loss compare for each experiment!
 
 ## License ###
 Modifications are under the same Apache license as the original Tensorflow code.
