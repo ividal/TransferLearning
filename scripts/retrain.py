@@ -99,26 +99,26 @@ import sys
 import tensorflow as tf
 
 from tensorflow.python.platform import gfile
-from .data_preparation import prepare_file_system, maybe_download_and_extract, create_image_lists, \
-    create_model_info, get_random_cached_bottlenecks, cache_bottlenecks, save_graph_to_file, add_jpeg_decoding
+from .data_preparation import prepare_file_system, maybe_download_and_extract, \
+    create_image_lists, create_model_info, get_random_cached_bottlenecks, cache_bottlenecks,\
+    save_graph_to_file, add_jpeg_decoding
 
 
 def variable_summaries(var):
-
     """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
     with tf.name_scope('summaries'):
         mean = tf.reduce_mean(var)
         tf.summary.scalar('mean', mean)
         with tf.name_scope('stddev'):
             stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-        #tf.summary.scalar('stddev', stddev)
-        #tf.summary.scalar('max', tf.reduce_max(var))
-        #tf.summary.scalar('min', tf.reduce_min(var))
+            tf.summary.scalar('stddev', stddev)
+            # tf.summary.scalar('max', tf.reduce_max(var))
+            # tf.summary.scalar('min', tf.reduce_min(var))
     tf.summary.histogram('histogram', var)
 
 
 def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor,
-                           bottleneck_tensor_size):
+                           bottleneck_tensor_size, optimizer_name="sgd"):
     """Adds a new softmax and fully-connected layer for training.
 
     We need to retrain the top layer to identify our new classes, so this function
@@ -129,8 +129,7 @@ def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor,
     https://www.tensorflow.org/versions/master/tutorials/mnist/beginners/index.html
 
     Args:
-      class_count: Integer of how many categories of things we're trying to
-          recognize.
+      class_count: Integer of how many categories of things we're trying to recognize.
       final_tensor_name: Name string for the new final node that produces results.
       bottleneck_tensor: The output of the main CNN graph.
       bottleneck_tensor_size: How many entries in the bottleneck vector.
@@ -139,6 +138,10 @@ def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor,
       The tensors for the training and cross entropy results, and tensors for the
       bottleneck input and ground truth input.
     """
+    valid_optimizers = ["sgd", "adam"]
+    assert optimizer_name in valid_optimizers,\
+        "Unknown optimizer ({}). Expected: {}".format(optimizer_name,
+                                                      valid_optimizers)
     with tf.name_scope('input'):
         bottleneck_input = tf.placeholder_with_default(
             bottleneck_tensor,
@@ -155,7 +158,7 @@ def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor,
             initial_value = tf.truncated_normal(
                 [bottleneck_tensor_size, class_count], stddev=0.001)
             layer_weights = tf.Variable(initial_value, name='final_weights')
-            variable_summaries(layer_weights)
+            # variable_summaries(layer_weights)
         with tf.name_scope('biases'):
             layer_biases = tf.Variable(tf.zeros([class_count]), name='final_biases')
             variable_summaries(layer_biases)
@@ -175,11 +178,14 @@ def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor,
     tf.summary.scalar('cross_entropy', cross_entropy_mean)
 
     with tf.name_scope('train'):
-        optimizer = tf.train.GradientDescentOptimizer(FLAGS.learning_rate)
+        if optimizer_name == "adam":
+            optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
+        else:
+            optimizer = tf.train.GradientDescentOptimizer(FLAGS.learning_rate)
+
         train_step = optimizer.minimize(cross_entropy_mean)
 
-    return (train_step, cross_entropy_mean, bottleneck_input, ground_truth_input,
-            final_tensor)
+    return (train_step, cross_entropy_mean, bottleneck_input, ground_truth_input, final_tensor)
 
 
 def create_model_graph(model_info):
@@ -189,8 +195,7 @@ def create_model_graph(model_info):
       model_info: Dictionary containing information about the model architecture.
 
     Returns:
-      Graph holding the trained network, and various tensors we'll be
-      manipulating.
+      Graph holding the trained network, and various tensors we'll be manipulating.
     """
     with tf.Graph().as_default() as graph:
         model_path = os.path.join(FLAGS.model_dir, model_info['model_file_name'])
@@ -213,8 +218,7 @@ def add_evaluation_step(result_tensor, ground_truth_tensor):
 
     Args:
       result_tensor: The new final node that produces results.
-      ground_truth_tensor: The node we feed ground truth data
-      into.
+      ground_truth_tensor: The node we feed ground truth data into.
 
     Returns:
       Tuple of (evaluation step, prediction).
@@ -227,7 +231,6 @@ def add_evaluation_step(result_tensor, ground_truth_tensor):
             evaluation_step = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar('accuracy', evaluation_step)
     return evaluation_step, prediction
-
 
 
 def main(_):
@@ -254,12 +257,11 @@ def main(_):
                                      FLAGS.validation_percentage, FLAGS.max_num_images_per_class)
     class_count = len(image_lists.keys())
     if class_count == 0:
-        tf.logging.error('No valid folders of images found at ' + FLAGS.image_dir)
+        tf.logging.error('No valid folders of images found at {}'.format(FLAGS.image_dir))
         return -1
     if class_count == 1:
-        tf.logging.error('Only one valid folder of images found at ' +
-                         FLAGS.image_dir +
-                         ' - multiple classes are needed for classification.')
+        tf.logging.error('Only one valid folder of images found at {} - multiple classes are '
+                         'needed for classification.'.format(FLAGS.image_dir))
         return -1
 
     with tf.Session(graph=graph) as sess:
@@ -280,7 +282,7 @@ def main(_):
         (train_step, cross_entropy, bottleneck_input, ground_truth_input,
          final_tensor) = add_final_training_ops(
             len(image_lists.keys()), FLAGS.final_tensor_name, bottleneck_tensor,
-            model_info['bottleneck_tensor_size'])
+            model_info['bottleneck_tensor_size'], FLAGS.optimizer_name)
 
         # Create the operations we need to evaluate the accuracy of our new layer.
         evaluation_step, prediction = add_evaluation_step(
@@ -482,7 +484,7 @@ if __name__ == '__main__':
         type=str,
         default='mobilenet_1.0_224',
         help="""\
-      Which model architecture to use. For faster or smaller models, choose a MobileNet with the
+      Which model architecture to use. For faster or smaller models, choose a MobileNet with the 
       form 'mobilenet_<parameter size>_<input_size>'. For example, 'mobilenet_1.0_224' will pick 
       a model that is 17 MB in size and takes 224 pixel input images.\
       """)
@@ -491,8 +493,16 @@ if __name__ == '__main__':
         type=int,
         default=2**27-1,
         help="""\
-      The maximum number of images to be allowed for a single class. The default number is huge even for COCO or 
-      ImageNet standards (2**27-1).\
+      The maximum number of images to be allowed for a single class. The default number is huge 
+      even for COCO or ImageNet standards (2**27-1).\
       """)
+    parser.add_argument(
+        '--optimizer_name',
+        type=str,
+        default="sgd",
+        help="""\
+      The optimizer to use. Accepted values are currently 'adam' or 'sgd'\
+      """)
+
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
