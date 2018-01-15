@@ -34,5 +34,7 @@ Notice tf_files/training_summaries contains the following structure:
 This way you will be able to compare the loss function and other metrics from different trainings in the same Tensoboard
 plot.
 
+![tensorboard](doc/tensorboard_multiple.png)
+
 ### License ###
 I'm redistributing modifications under the same Apache 2.0 license from the original Tensorflow code.
