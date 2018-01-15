@@ -7,6 +7,8 @@
     * or are running a docker container with docker ([see here](https//hub.docker.com/r/tensorflow/tensorflow/))
 2. Install the dependencies with the `requirements.txt` in this repo.
 
+Both Python 2.7 and Python 3.5 should work (tested with 2.7 and 3.5). That said, it's time to let 2.7 go.
+
 Quick start with a virtual environment:
 ```sh
 $ virtualenv -p $(which python3) py-tf
@@ -14,7 +16,7 @@ $ source py-tf/bin/activate
 $ pip install -r requirements.txt
 ```
 
-Both Python 2.7 and Python 3.5 should work (tested with 2.7 and 3.5). That said, it's time to let 2.7 go.
+
 
 ### Finding your way ###
 `sh` is your entry point; there's a bash script to showcase the usage of the retraining code
@@ -22,7 +24,11 @@ Both Python 2.7 and Python 3.5 should work (tested with 2.7 and 3.5). That said,
 `scripts` contains the retraining code; notice there have been some modifications to the original Tensorflow github script, 
 but the interface is the same.
 
-`tf_files` Just like in the original Tensorflow Transfer Learning [tutorial](https://www.tensorflow.org/tutorials/image_retraining): data, models and logs will be saved here. 
+`tf_files` contains data, models and tensorboard logs (training_summaries), just
+ like in the original Tensorflow Transfer Learning [tutorial](https://www
+ .tensorflow.org/tutorials/image_retraining). However, you will be able to see
+ stacked plots on the Tensorboard.
+
 
 #### Tensorboard ####
 Notice tf_files/training_summaries contains the following structure:
@@ -36,5 +42,12 @@ plot.
 
 ![tensorboard](doc/tensorboard_multiple.png)
 
+Once you've already launched a training, go to a second terminal and
+start your Tensorboard with:
+
+```sh
+tensorboard --logdir=tf_files/training_summaries &
+```
+
 ### License ###
-I'm redistributing modifications under the same Apache 2.0 license from the original Tensorflow code.
+Modifications are under the same Apache license as the original Tensorflow code.
