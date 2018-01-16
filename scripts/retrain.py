@@ -291,11 +291,11 @@ def main(_):
         # Merge all the summaries and write them out to the summaries_dir
         merged = tf.summary.merge_all()
         import time
-        timestamp = time.strftime("%Y%m%d-%H%M%S")
-        train_writer = tf.summary.FileWriter("{}/{}/train".format(FLAGS.summaries_dir, timestamp),
+        timestamp = time.strftime("%H%M%S")
+        train_writer = tf.summary.FileWriter("{}-{}/train".format(FLAGS.summaries_dir, timestamp),
                                              sess.graph)
 
-        validation_writer = tf.summary.FileWriter("{}/{}/validation".format(FLAGS.summaries_dir,
+        validation_writer = tf.summary.FileWriter("{}-{}/validation".format(FLAGS.summaries_dir,
                                                                             timestamp))
 
         # Set up all our weights to their initial default values.
