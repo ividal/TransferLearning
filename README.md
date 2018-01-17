@@ -4,7 +4,7 @@
 
 1. Make sure you either: 
     * create a virtual environment 
-    * or are running a docker container with docker ([see here](https//hub.docker.com/r/tensorflow/tensorflow/))
+    * or are running a docker container with docker ([images available here](https://hub.docker.com/r/tensorflow/tensorflow/))
 2. Install the dependencies with the `requirements.txt` in this repo.
 
 Both Python 2.7 and Python 3.5 should work (tested with 2.7 and 3.5). That said, it's time to let 2.7 go.
