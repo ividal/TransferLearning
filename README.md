@@ -9,6 +9,9 @@
 
 Both Python 2.7 and Python 3.5 should work (tested with 2.7 and 3.5). That said, it's time to let 2.7 go.
 
+Conda (Anaconda) is _known_ to cause all sorts of problems and does way too much magic for anyone to investigate when 
+things go badly. It is strongly encouraged to use virtualenv instead. Otherwise, if you're used to docker, go right ahead!
+
 
 ### TL;DR: Quick start with a virtual environment ###
 
@@ -81,6 +84,7 @@ Tensorboard (to see what's going on).
 ```
 sh/retrain.sh
 ```
+
 * Launch Tensoboard only once with 
 ```
 tensorboard --logdir=tf_files/training_summaries
