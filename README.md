@@ -7,10 +7,12 @@
     * or are running a docker container with docker ([images available here](https://hub.docker.com/r/tensorflow/tensorflow/))
 2. Install the dependencies with the `requirements.txt` in this repo.
 
-Both Python 2.7 and Python 3.5 should work (tested with 2.7 and 3.5). That said, it's time to let 2.7 go.
+Both Python 2.7 and Python 3.5+ should work (tested with 2.7, 3.5 & 3.6). That said, it's time to let 2.7 go.
 
 Conda (Anaconda) is _known_ to cause all sorts of problems and does way too much magic for anyone to investigate when 
-things go badly. It is strongly encouraged to use virtualenv instead. Otherwise, if you're used to docker, go right ahead!
+things go badly. It is strongly encouraged to use venv (already available with your Python installation) instead.
+
+(If, instead of this, you are used to and prefer using docker, go right ahead!)
 
 
 ### TL;DR: Quick start with a virtual environment ###
