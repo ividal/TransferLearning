@@ -7,7 +7,7 @@
     * or are running a docker container with docker ([images available here](https://hub.docker.com/r/tensorflow/tensorflow/))
 2. Install the dependencies with the `requirements.txt` in this repo.
 
-Both Python 2.7 and Python 3.5+ should work (tested with 2.7, 3.5 & 3.6). That said, it's time to let 2.7 go.
+Python 3.5+ should work (tested with 3.5 & 3.6). Instructions to create a Python3 based environment are given below.
 
 Conda (Anaconda) is _known_ to cause all sorts of problems and does way too much magic for anyone to investigate when 
 things go badly. It is strongly encouraged to use venv (already available with your Python installation) instead.
@@ -17,26 +17,46 @@ things go badly. It is strongly encouraged to use venv (already available with y
 
 ### TL;DR: Quick start with a virtual environment ###
 
+Assuming you want to store your virtual environment under this same repo (FYI, other people prefer to do so under `$HOME/.venvs`):
 ```sh
-$ virtualenv -p $(which python3) py-tf
+$ python3 -m venv py-tf 
 $ source py-tf/bin/activate
 $ pip install -r requirements.txt
 ```
 
 ### Pre-trained model & new dataset ###
 
-1. Download the pre-trained model from [here](http://download.tensorflow.org/models/mobilenet_v1_1.0_224_2017_06_14.tar.gz), into tf_files/models.
-2. Download the sample data ([flowers dataset](http://download.tensorflow.org/example_images/flower_photos.tgz)) to tf_files.
-3. Extract it. Your folder structure should be:
+1. Download the pre-trained model from [here](https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_1.0_224_frozen.tgz), into tf_files/models.
+```sh
+# Assuming you have wget installed (`sudo apt-get install wget`):
+wget -P tf_files/models/ https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_1.0_224_frozen.tgz
+```
+2. Download and extract the sample data ([flowers dataset](http://download.tensorflow.org/example_images/flower_photos.tgz)) to tf_files.
+```sh
+# Assuming you have wget installed (`sudo apt-get install wget`):
+wget http://download.tensorflow.org/example_images/flower_photos.tgz | tar --one-top-level=tf_files -xvf
+```
+4. Your folder structure should be:
 
 ```
+(py-tf) user@machine:~/TransferLearning$ tree tf_files/
 tf_files/
-   flower_photos/
-     daisy/
-        image97999.jpg
-        ... 
-     dandelion/
-     ...
+├── flower_photos
+│   ├── daisy
+│   │    ├── image97999.jpg
+│	│	 └── ...
+│   ├── dandelion
+│   ├── roses
+│   ├── sunflowers
+│   └── tulips
+├── models
+│   ├── mobilenet_v1_1.0_224
+│   │   ├── frozen_graph.pb
+│   │   ├── labels.txt
+│   │   └── quantized_graph.pb
+│   ├── mobilenet_v1_1.0_224_frozen.tgz
+│   └── save_mobilenet_tgz_here
+...
 ```
 
 
