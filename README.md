@@ -6,6 +6,7 @@
     * create a virtual environment 
     * or are running a docker container with docker ([images available here](https://hub.docker.com/r/tensorflow/tensorflow/))
 2. Install the dependencies with the `requirements.txt` in this repo.
+3. Notice for this workshop we will not need a GPU (all images are small and all trainings light).
 
 Python 3.5+ should work (tested with 3.5 & 3.6). Instructions to create a Python3 based environment are given below.
 
@@ -44,7 +45,7 @@ tf_files/
 ├── flower_photos
 │   ├── daisy
 │   │    ├── image97999.jpg
-│	│	 └── ...
+│   │    └── ...
 │   ├── dandelion
 │   ├── roses
 │   ├── sunflowers
@@ -61,7 +62,7 @@ tf_files/
 
 
 ## Finding your way ###
-`sh` is your entry point; there's a bash script to showcase the usage of the retraining code
+`sh` is your entry point; there's a bash script to showcase the usage of the retraining code.
 
 `scripts` contains the retraining code; notice there have been some modifications to the original Tensorflow github script, 
 but the interface is the same.
