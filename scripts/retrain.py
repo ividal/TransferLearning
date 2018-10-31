@@ -106,15 +106,15 @@ from .data_preparation import prepare_file_system, maybe_download_and_extract, \
 
 def variable_summaries(var):
     """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
-    with tf.name_scope('summaries'):
+    with tf.name_scope("summaries"):
         mean = tf.reduce_mean(var)
-        tf.summary.scalar('mean', mean)
-        with tf.name_scope('stddev'):
+        tf.summary.scalar("mean", mean)
+        with tf.name_scope("stddev"):
             stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-            tf.summary.scalar('stddev', stddev)
-            # tf.summary.scalar('max', tf.reduce_max(var))
-            # tf.summary.scalar('min', tf.reduce_min(var))
-    tf.summary.histogram('histogram', var)
+            tf.summary.scalar("stddev", stddev)
+            # tf.summary.scalar("max", tf.reduce_max(var))
+            # tf.summary.scalar("min", tf.reduce_min(var))
+    tf.summary.histogram("histogram", var)
 
 
 def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor,
@@ -142,42 +142,42 @@ def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor,
     assert optimizer_name in valid_optimizers,\
         "Unknown optimizer ({}). Expected: {}".format(optimizer_name,
                                                       valid_optimizers)
-    with tf.name_scope('input'):
+    with tf.name_scope("input"):
         bottleneck_input = tf.placeholder_with_default(
             bottleneck_tensor,
             shape=[None, bottleneck_tensor_size],
-            name='BottleneckInputPlaceholder')
+            name="BottleneckInputPlaceholder")
 
         ground_truth_input = tf.placeholder(
-            tf.int64, [None], name='GroundTruthInput')
+            tf.int64, [None], name="GroundTruthInput")
 
-    # Organizing the following ops as `final_training_ops` so they're easier to see in TensorBoard
-    layer_name = 'final_training_ops'
+    # Organizing the following ops as `final_training_ops` so they"re easier to see in TensorBoard
+    layer_name = "final_training_ops"
     with tf.name_scope(layer_name):
-        with tf.name_scope('weights'):
+        with tf.name_scope("weights"):
             initial_value = tf.truncated_normal(
                 [bottleneck_tensor_size, class_count], stddev=0.001)
-            layer_weights = tf.Variable(initial_value, name='final_weights')
+            layer_weights = tf.Variable(initial_value, name="final_weights")
             # variable_summaries(layer_weights)
-        with tf.name_scope('biases'):
-            layer_biases = tf.Variable(tf.zeros([class_count]), name='final_biases')
+        with tf.name_scope("biases"):
+            layer_biases = tf.Variable(tf.zeros([class_count]), name="final_biases")
             variable_summaries(layer_biases)
 
-        with tf.name_scope('Wx_plus_b'):
+        with tf.name_scope("Wx_plus_b"):
             logits = tf.matmul(bottleneck_input, layer_weights) + layer_biases
-            tf.summary.histogram('pre_activations', logits)
+            tf.summary.histogram("pre_activations", logits)
 
     final_tensor = tf.nn.softmax(logits, name=final_tensor_name)
 
-    tf.summary.histogram('activations', final_tensor)
+    tf.summary.histogram("activations", final_tensor)
 
-    with tf.name_scope('cross_entropy'):
+    with tf.name_scope("cross_entropy"):
         cross_entropy_mean = tf.losses.sparse_softmax_cross_entropy(
             labels=ground_truth_input, logits=logits)
 
-    tf.summary.scalar('cross_entropy', cross_entropy_mean)
+    tf.summary.scalar("cross_entropy", cross_entropy_mean)
 
-    with tf.name_scope('train'):
+    with tf.name_scope("train"):
         if optimizer_name == "adam":
             optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
         else:
@@ -198,17 +198,17 @@ def create_model_graph(model_info):
       Graph holding the trained network, and various tensors we'll be manipulating.
     """
     with tf.Graph().as_default() as graph:
-        model_path = os.path.join(FLAGS.model_dir, model_info['model_file_name'])
-        tf.logging.info('Model path: {}'.format(model_path))
-        with gfile.FastGFile(model_path, 'rb') as f:
+        model_path = os.path.join(FLAGS.model_dir, model_info["model_file_name"])
+        tf.logging.info("Model path: {}".format(model_path))
+        with gfile.FastGFile(model_path, "rb") as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
             bottleneck_tensor, resized_input_tensor = (tf.import_graph_def(
                 graph_def,
-                name='',
+                name="",
                 return_elements=[
-                    model_info['bottleneck_tensor_name'],
-                    model_info['resized_input_tensor_name'],
+                    model_info["bottleneck_tensor_name"],
+                    model_info["resized_input_tensor_name"],
                 ]))
     return graph, bottleneck_tensor, resized_input_tensor
 
@@ -223,13 +223,13 @@ def add_evaluation_step(result_tensor, ground_truth_tensor):
     Returns:
       Tuple of (evaluation step, prediction).
     """
-    with tf.name_scope('accuracy'):
-        with tf.name_scope('correct_prediction'):
+    with tf.name_scope("accuracy"):
+        with tf.name_scope("correct_prediction"):
             prediction = tf.argmax(result_tensor, 1)
             correct_prediction = tf.equal(prediction, ground_truth_tensor)
-        with tf.name_scope('accuracy'):
+        with tf.name_scope("accuracy"):
             evaluation_step = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    tf.summary.scalar('accuracy', evaluation_step)
+    tf.summary.scalar("accuracy", evaluation_step)
     return evaluation_step, prediction
 
 
@@ -244,11 +244,11 @@ def main(_):
     # Gather information about the model architecture we'll be using.
     model_info = create_model_info(FLAGS.architecture)
     if not model_info:
-        tf.logging.error('Did not recognize architecture flag')
+        tf.logging.error("Did not recognize architecture flag")
         return -1
 
     # Set up the pre-trained graph.
-    maybe_download_and_extract(model_info['data_url'], FLAGS.model_dir)
+    maybe_download_and_extract(model_info["data_url"], FLAGS.model_dir)
     graph, bottleneck_tensor, resized_image_tensor = (
         create_model_graph(model_info))
 
@@ -257,19 +257,19 @@ def main(_):
                                      FLAGS.validation_percentage, FLAGS.max_num_images_per_class)
     class_count = len(image_lists.keys())
     if class_count == 0:
-        tf.logging.error('No valid folders of images found at {}'.format(FLAGS.image_dir))
+        tf.logging.error("No valid folders of images found at {}".format(FLAGS.image_dir))
         return -1
     if class_count == 1:
-        tf.logging.error('Only one valid folder of images found at {} - multiple classes are '
-                         'needed for classification.'.format(FLAGS.image_dir))
+        tf.logging.error("Only one valid folder of images found at {} - multiple classes are "
+                         "needed for classification.".format(FLAGS.image_dir))
         return -1
 
     with tf.Session(graph=graph) as sess:
         # Set up the image decoding sub-graph.
         jpeg_data_tensor, decoded_image_tensor = add_jpeg_decoding(
-            model_info['input_width'], model_info['input_height'],
-            model_info['input_depth'], model_info['input_mean'],
-            model_info['input_std'])
+            model_info["input_width"], model_info["input_height"],
+            model_info["input_depth"], model_info["input_mean"],
+            model_info["input_std"])
 
         # We'll make sure we've calculated the 'bottleneck' image summaries and
         # cached them on disk.
@@ -282,7 +282,7 @@ def main(_):
         (train_step, cross_entropy, bottleneck_input, ground_truth_input,
          final_tensor) = add_final_training_ops(
             len(image_lists.keys()), FLAGS.final_tensor_name, bottleneck_tensor,
-            model_info['bottleneck_tensor_size'], FLAGS.optimizer_name)
+            model_info["bottleneck_tensor_size"], FLAGS.optimizer_name)
 
         # Create the operations we need to evaluate the accuracy of our new layer.
         evaluation_step, prediction = add_evaluation_step(
@@ -307,7 +307,7 @@ def main(_):
             # Get a batch of input bottleneck values, from the cache stored on disk.
             (train_bottlenecks,
              train_ground_truth, _) = get_random_cached_bottlenecks(
-                sess, image_lists, FLAGS.train_batch_size, 'training',
+                sess, image_lists, FLAGS.train_batch_size, "training",
                 FLAGS.bottleneck_dir, FLAGS.image_dir, jpeg_data_tensor,
                 decoded_image_tensor, resized_image_tensor, bottleneck_tensor,
                 FLAGS.architecture, FLAGS.max_num_images_per_class)
@@ -326,13 +326,13 @@ def main(_):
                     [evaluation_step, cross_entropy],
                     feed_dict={bottleneck_input: train_bottlenecks,
                                ground_truth_input: train_ground_truth})
-                tf.logging.info('%s: Step %d: Train accuracy = %.1f%%' %
+                tf.logging.info("%s: Step %d: Train accuracy = %.1f%%" %
                                 (datetime.now(), i, train_accuracy * 100))
-                tf.logging.info('%s: Step %d: Cross entropy = %f' %
+                tf.logging.info("%s: Step %d: Cross entropy = %f" %
                                 (datetime.now(), i, cross_entropy_value))
                 validation_bottlenecks, validation_ground_truth, _ = (
                     get_random_cached_bottlenecks(
-                        sess, image_lists, FLAGS.validation_batch_size, 'validation',
+                        sess, image_lists, FLAGS.validation_batch_size, "validation",
                         FLAGS.bottleneck_dir, FLAGS.image_dir, jpeg_data_tensor,
                         decoded_image_tensor, resized_image_tensor, bottleneck_tensor,
                         FLAGS.architecture, FLAGS.max_num_images_per_class))
@@ -343,14 +343,14 @@ def main(_):
                     feed_dict={bottleneck_input: validation_bottlenecks,
                                ground_truth_input: validation_ground_truth})
                 validation_writer.add_summary(validation_summary, i)
-                tf.logging.info('%s: Step %d: Validation accuracy = %.1f%% ' %
+                tf.logging.info("%s: Step %d: Validation accuracy = %.1f%% " %
                                 (datetime.now(), i, validation_accuracy * 100))
 
         # We've completed all our training, so run a final test evaluation on
         # some new images we haven't used before.
         test_bottlenecks, test_ground_truth, test_filenames = (
             get_random_cached_bottlenecks(
-                sess, image_lists, FLAGS.test_batch_size, 'testing',
+                sess, image_lists, FLAGS.test_batch_size, "testing",
                 FLAGS.bottleneck_dir, FLAGS.image_dir, jpeg_data_tensor,
                 decoded_image_tensor, resized_image_tensor, bottleneck_tensor,
                 FLAGS.architecture, FLAGS.max_num_images_per_class))
@@ -358,80 +358,80 @@ def main(_):
             [evaluation_step, prediction],
             feed_dict={bottleneck_input: test_bottlenecks,
                        ground_truth_input: test_ground_truth})
-        tf.logging.info('Final test accuracy = %.1f%% (N=%d)' %
+        tf.logging.info("Final test accuracy = %.1f%% (N=%d)" %
                         (test_accuracy * 100, len(test_bottlenecks)))
 
         # Write out the trained graph and labels with the weights stored as
         # constants.
         save_graph_to_file(sess, graph, FLAGS.output_graph, FLAGS.final_tensor_name)
-        with gfile.FastGFile(FLAGS.output_labels, 'w') as f:
-            f.write('\n'.join(image_lists.keys()) + '\n')
+        with gfile.FastGFile(FLAGS.output_labels, "w") as f:
+            f.write("\n".join(image_lists.keys()) + "\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--image_dir',
+        "--image_dir",
         type=str,
-        default='',
-        help='Path to folders of labeled images.'
+        default="",
+        help="Path to folders of labeled images."
     )
     parser.add_argument(
-        '--output_graph',
+        "--output_graph",
         type=str,
-        default='/tmp/output_graph.pb',
-        help='Where to save the trained graph.'
+        default="/tmp/output_graph.pb",
+        help="Where to save the trained graph."
     )
     parser.add_argument(
-        '--output_labels',
+        "--output_labels",
         type=str,
-        default='/tmp/output_labels.txt',
-        help='Where to save the trained graph\'s labels.'
+        default="/tmp/output_labels.txt",
+        help="Where to save the trained graph's labels."
     )
     parser.add_argument(
-        '--summaries_dir',
+        "--summaries_dir",
         type=str,
-        default='/tmp/retrain_logs',
-        help='Where to save summary logs for TensorBoard.'
+        default="/tmp/retrain_logs",
+        help="Where to save summary logs for TensorBoard."
     )
     parser.add_argument(
-        '--how_many_training_steps',
+        "--how_many_training_steps",
         type=int,
         default=200,
-        help='How many training steps to run before ending.'
+        help="How many training steps to run before ending."
     )
     parser.add_argument(
-        '--learning_rate',
+        "--learning_rate",
         type=float,
         default=0.01,
-        help='How large a learning rate to use when training.'
+        help="How large a learning rate to use when training."
     )
     parser.add_argument(
-        '--testing_percentage',
+        "--testing_percentage",
         type=int,
         default=10,
-        help='What percentage of images to use as a test set.'
+        help="What percentage of images to use as a test set."
     )
     parser.add_argument(
-        '--validation_percentage',
+        "--validation_percentage",
         type=int,
         default=10,
-        help='What percentage of images to use as a validation set.'
+        help="What percentage of images to use as a validation set."
     )
     parser.add_argument(
-        '--eval_step_interval',
+        "--eval_step_interval",
         type=int,
         default=10,
-        help='How often to evaluate the training results.'
+        help="How often to evaluate the training results."
     )
     parser.add_argument(
-        '--train_batch_size',
+        "--train_batch_size",
         type=int,
         default=100,
-        help='How many images to train on at a time.'
+        help="How many images to train on at a time."
     )
     parser.add_argument(
-        '--test_batch_size',
+        "--test_batch_size",
         type=int,
         default=-1,
         help="""\
@@ -442,7 +442,7 @@ if __name__ == '__main__':
       """
     )
     parser.add_argument(
-        '--validation_batch_size',
+        "--validation_batch_size",
         type=int,
         default=100,
         help="""\
@@ -455,9 +455,9 @@ if __name__ == '__main__':
       """
     )
     parser.add_argument(
-        '--model_dir',
+        "--model_dir",
         type=str,
-        default='/tmp/imagenet',
+        default="/tmp/imagenet",
         help="""\
       Path to classify_image_graph_def.pb,
       imagenet_synset_to_human_label_map.txt, and
@@ -465,30 +465,30 @@ if __name__ == '__main__':
       """
     )
     parser.add_argument(
-        '--bottleneck_dir',
+        "--bottleneck_dir",
         type=str,
-        default='/tmp/bottleneck',
-        help='Path to cache bottleneck layer values as files.'
+        default="/tmp/bottleneck",
+        help="Path to cache bottleneck layer values as files."
     )
     parser.add_argument(
-        '--final_tensor_name',
+        "--final_tensor_name",
         type=str,
-        default='final_result',
+        default="final_result",
         help="""\
       The name of the output classification layer in the retrained graph.\
       """
     )
     parser.add_argument(
-        '--architecture',
+        "--architecture",
         type=str,
-        default='mobilenet_1.0_224',
+        default="mobilenet_1.0_224",
         help="""\
       Which model architecture to use. For faster or smaller models, choose a MobileNet with the 
       form 'mobilenet_<parameter size>_<input_size>'. For example, 'mobilenet_1.0_224' will pick 
       a model that is 17 MB in size and takes 224 pixel input images.\
       """)
     parser.add_argument(
-        '--max_num_images_per_class',
+        "--max_num_images_per_class",
         type=int,
         default=2**27-1,
         help="""\
@@ -496,7 +496,7 @@ if __name__ == '__main__':
       even for COCO or ImageNet standards (2**27-1).\
       """)
     parser.add_argument(
-        '--optimizer_name',
+        "--optimizer_name",
         type=str,
         default="sgd",
         help="""\
