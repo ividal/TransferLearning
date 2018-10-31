@@ -2,45 +2,51 @@
 
 ## How do I get set up? ###
 
-1. Make sure you either: 
-    * create a virtual environment 
-    * or are running a docker container with docker ([images available here](https://hub.docker.com/r/tensorflow/tensorflow/))
-2. Install the dependencies with the `requirements.txt` in this repo.
-3. Notice for this workshop we will not need a GPU (all images are small and all trainings light).
+1. Make sure you have wget installed: `sudo apt-get install wget`.
+2. Make sure you create a new virtual environment (instructions below).
+3. Install the dependencies with the `requirements.txt` in this repo.
+4. Notice for this workshop we will not need a GPU (all images are small and all trainings light).
 
 Python 3.5+ should work (tested with 3.5 & 3.6). Instructions to create a Python3 based environment are given below.
 
 Conda (Anaconda) is _known_ to cause all sorts of problems and does way too much magic for anyone to investigate when 
 things go badly. It is strongly encouraged to use venv (already available with your Python installation) instead.
 
-(If, instead of this, you are used to and prefer using docker, go right ahead!)
+(If, instead of this, you are used to and prefer using docker, go right ahead! [Please choose one based on v1.11 from here.](https://hub.docker.com/r/tensorflow/tensorflow/)))
 
 
 ### TL;DR: Quick start with a virtual environment ###
 
 Assuming you want to store your virtual environment under this same repo (FYI, other people prefer to do so under `$HOME/.venvs`):
 ```sh
-$ python3 -m venv py-tf 
-$ source py-tf/bin/activate
-$ pip install -r requirements.txt
+~/TransferLearning$ python3 -m venv py-tf 
+~/TransferLearning$ source py-tf/bin/activate
+~/TransferLearning$ pip install -r requirements.txt
 ```
 
 ### Pre-trained model & new dataset ###
+**Linux users**: run this from the repo root folder:
+```sh
+~/TransferLearning$ bash sh/download.sh
+```
 
+**Other systems** (or if you want to do each step manually):
 1. Download the pre-trained model from [here](https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_1.0_224_frozen.tgz), into tf_files/models.
 ```sh
 # Assuming you have wget installed (`sudo apt-get install wget`):
-wget -P tf_files/models/ https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_1.0_224_frozen.tgz
+~/TransferLearning$ wget -P tf_files/models/ https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_1.0_224_frozen.tgz
 ```
 2. Download and extract the sample data ([flowers dataset](http://download.tensorflow.org/example_images/flower_photos.tgz)) to tf_files.
 ```sh
 # Assuming you have wget installed (`sudo apt-get install wget`):
-wget http://download.tensorflow.org/example_images/flower_photos.tgz | tar --one-top-level=tf_files -xvf
+~/TransferLearning$ wget -qO- http://download.tensorflow.org/example_images/flower_photos.tgz | tar --one-top-level=tf_files -xvz
 ```
-4. Your folder structure should be:
+
+#### Resulting files ####
+Whichever method you chose, your folder structure should be:
 
 ```
-(py-tf) user@machine:~/TransferLearning$ tree tf_files/
+~/TransferLearning$ tree tf_files/
 tf_files/
 ├── flower_photos
 │   ├── daisy
@@ -80,7 +86,7 @@ Notice tf_files/training_summaries contains the following structure:
         * validation
 
 This way you will be able to compare the loss function and other metrics from different trainings in the same Tensoboard
-plot.
+plot. If you don't fully follow this currently, don't worry, it will be explained during the Workshop.
 
 ![tensorboard](doc/tensorboard_multiple.png)
 
@@ -88,7 +94,7 @@ Once you've already launched a training, go to a second terminal and
 start your Tensorboard with:
 
 ```sh
-tensorboard --logdir=tf_files/training_summaries &
+~/TransferLearning$ tensorboard --logdir=tf_files/training_summaries &
 ```
 
 Go with your browser to http://localhost:6006 and enjoy!
@@ -105,12 +111,12 @@ Tensorboard (to see what's going on).
 
 * Tweak parameters inside sh/retrain.sh and launch with
 ```
-sh/retrain.sh
+~/TransferLearning$ sh sh/retrain.sh
 ```
 
 * Launch Tensoboard only once with 
 ```
-tensorboard --logdir=tf_files/training_summaries
+~/TransferLearning$ tensorboard --logdir=tf_files/training_summaries
 ```
 
 
