@@ -216,8 +216,8 @@ def maybe_download_and_extract(data_url, dest_directory):
     ensure_dir_exists(dest_directory)
     ensure_dir_exists(model_folder)
 
-    if not os.path.exists(model_full_path):
-        if not os.path.exists(filepath):
+    if not gfile.Exists(model_full_path):
+        if not gfile.Exists(filepath):
             tf.logging.info('Tarfile {} missing, downloading it.'.format(filepath))
 
             def _progress(count, block_size, total_size):
@@ -233,7 +233,7 @@ def maybe_download_and_extract(data_url, dest_directory):
 
         tf.logging.info('Extracting file from {}'.format(filepath))
         tarfile.open(filepath, 'r:gz').extractall(dest_directory)
-        assert os.path.exists(model_full_path), "Unable to extract model: {}".format(
+        assert gfile.Exists(model_full_path), "Unable to extract model: {}".format(
             model_full_path)
 
 
@@ -243,7 +243,7 @@ def ensure_dir_exists(dir_name):
     Args:
       dir_name: Path string to the folder we want to create.
     """
-    if not os.path.exists(dir_name):
+    if not gfile.Exists(dir_name):
         tf.logging.info('Folder {} missing, creating it.'.format(dir_name))
         os.makedirs(dir_name)
 
@@ -307,7 +307,7 @@ def get_or_create_bottleneck(sess, image_lists, label_name, index, image_dir,
     bottleneck_values = None
     bottleneck_path = get_bottleneck_path(image_lists, label_name, index,
                                           bottleneck_dir, category, architecture)
-    if not os.path.exists(bottleneck_path):
+    if not gfile.Exists(bottleneck_path):
         create_bottleneck_file(bottleneck_path, image_lists, label_name, index,
                                image_dir, category, sess, jpeg_data_tensor,
                                decoded_image_tensor, resized_input_tensor,
