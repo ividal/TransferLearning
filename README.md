@@ -1,5 +1,14 @@
 # Transfer Learning 101
 
+This is the entry point for our Intro to Transfer Learning workshop. The whole goal during this workshop is to go through the 
+first steps for image classification with Neural Networks and implement the building blocks from scratch. 
+
+If you want to do some reading beforehand, you'll find the following useful:
+
+* [About Tensorflow](https://www.tensorflow.org/)
+* [Different subsets of Tensorflow](https://www.tensorflow.org/guide/).
+* Notions on image classification and re-training of classifiers in [the original version of this workshop](https://www.tensorflow.org/hub/tutorials/image_retraining#training_on_flowers).
+
 ## How do I get set up? ###
 
 1. Make sure you have wget installed: `sudo apt-get install wget`.
@@ -8,24 +17,30 @@
 4. Notice for this workshop we will not need a GPU (all images are small and all trainings light).
 5. There are two sides for this workshop:
     1. Using the current code as-is and understanding its effects (which will serve as an intro).
-    2. Getting our hands dirty, re-implementing the code in a more user-friendly manner. You can start from branch `ẁorkshop_init`.
+    2. Getting our hands dirty, re-implementing the code. We will start from branch `ẁorkshop_init`.
   
 Python 3.5+ should work (tested with 3.5 & 3.6). Instructions to create a Python3 based environment are given below.
 
-Conda (Anaconda) is _known_ to cause all sorts of problems and does way too much magic for anyone to investigate when 
-things go badly. It is strongly encouraged to use venv (already available with your Python installation) instead.
-
-(If, instead of this, you are used to and prefer using docker, go right ahead! [Please choose one based on v1.11 from here.](https://hub.docker.com/r/tensorflow/tensorflow/)))
+(If, instead of this, you are used to and prefer using docker, go right ahead! 
+[Please choose one based on v1.12 from here.](https://hub.docker.com/r/tensorflow/tensorflow/)))
 
 
 ### TL;DR: Quick start with a virtual environment ###
 
 Assuming you want to store your virtual environment under this same repo (FYI, other people prefer to do so under `$HOME/.venvs`):
 ```sh
-~/TransferLearning$ python3 -m venv py-tf 
-~/TransferLearning$ source py-tf/bin/activate
+~/TransferLearning$ python3 -m venv venv-tf
+~/TransferLearning$ source venv-tf/bin/activate
 ~/TransferLearning$ pip install -r requirements.txt
 ```
+
+#### GPU users
+
+**Only** if you already have a GPU and **working CUDA** installation:
+
+```sh
+~/TransferLearning$ pip install tensorflow-gpu
+``` 
 
 ### Pre-trained model & new dataset ###
 **Linux users**: run this from the repo root folder:
@@ -83,7 +98,7 @@ but the interface is the same.
 
 ### Warning
 Notice after you have played with the current state of the code, we will be re-implementing data loading, model loading 
-and training in a more user-friendly manner, using updates to Tensorflow v1.9 and onwards.
+and training.
 
 
 ## Tensorboard ####
@@ -117,7 +132,7 @@ Recap:
 We'll be switching back and forth between the command line (to launch trainings) to
 Tensorboard (to see what's going on).
 
-We will be re-implementing different modules to load images, load pre-trained models and train in a more user-friendly manner.
+We will be re-implementing different modules to load images, load pre-trained models and train.
 
 The starting point being branch `workshop_init`.
 
