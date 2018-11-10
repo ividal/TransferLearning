@@ -6,7 +6,10 @@
 2. Make sure you create a new virtual environment (instructions below).
 3. Install the dependencies with the `requirements.txt` in this repo.
 4. Notice for this workshop we will not need a GPU (all images are small and all trainings light).
-
+5. There are two sides for this workshop:
+    1. Using the current code as-is and understanding its effects (which will serve as an intro).
+    2. Getting our hands dirty, re-implementing the code in a more user-friendly manner. You can start from branch `ẁorkshop_init`.
+  
 Python 3.5+ should work (tested with 3.5 & 3.6). Instructions to create a Python3 based environment are given below.
 
 Conda (Anaconda) is _known_ to cause all sorts of problems and does way too much magic for anyone to investigate when 
@@ -78,6 +81,11 @@ but the interface is the same.
  stacked plots on the Tensorboard.
 
 
+### Warning
+Notice after you have played with the current state of the code, we will be re-implementing data loading, model loading 
+and training in a more user-friendly manner, using updates to Tensorflow v1.9 and onwards.
+
+
 ## Tensorboard ####
 Notice tf_files/training_summaries contains the following structure:
    * architecture
@@ -109,16 +117,9 @@ Recap:
 We'll be switching back and forth between the command line (to launch trainings) to
 Tensorboard (to see what's going on).
 
-* Tweak parameters inside sh/retrain.sh and launch with
-```
-~/TransferLearning$ sh sh/retrain.sh
-```
+We will be re-implementing different modules to load images, load pre-trained models and train in a more user-friendly manner.
 
-* Launch Tensoboard only once with 
-```
-~/TransferLearning$ tensorboard --logdir=tf_files/training_summaries
-```
-
+The starting point being branch `workshop_init`.
 
 ## License ###
 Modifications are under the same Apache license as the original Tensorflow code.
