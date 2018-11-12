@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-r"""Simple transfer learning with Mobilenet models.
+"""Simple transfer learning with Mobilenet models.
 
 With support for TensorBoard.
 
@@ -133,11 +133,13 @@ def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor,
       final_tensor_name: Name string for the new final node that produces results.
       bottleneck_tensor: The output of the main CNN graph.
       bottleneck_tensor_size: How many entries in the bottleneck vector.
+      optimizer_name: The name of the optimizer to use during training.
 
     Returns:
       The tensors for the training and cross entropy results, and tensors for the
       bottleneck input and ground truth input.
     """
+
     valid_optimizers = ["sgd", "adam"]
     assert optimizer_name in valid_optimizers,\
         "Unknown optimizer ({}). Expected: {}".format(optimizer_name,
@@ -185,7 +187,7 @@ def add_final_training_ops(class_count, final_tensor_name, bottleneck_tensor,
 
         train_step = optimizer.minimize(cross_entropy_mean)
 
-    return (train_step, cross_entropy_mean, bottleneck_input, ground_truth_input, final_tensor)
+    return train_step, cross_entropy_mean, bottleneck_input, ground_truth_input, final_tensor
 
 
 def create_model_graph(model_info):
