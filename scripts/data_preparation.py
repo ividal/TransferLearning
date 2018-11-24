@@ -14,11 +14,7 @@
 # limitations under the License.
 # ==============================================================================
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
-import hashlib
 import os.path
 import random
 import re
@@ -30,9 +26,10 @@ from six.moves import urllib
 import tensorflow as tf
 
 from tensorflow.python.platform import gfile
-from tensorflow.python.util import compat
 from tensorflow.python.framework import graph_util
 
+
+random.seed(42)
 
 
 def create_image_lists(image_dir, testing_percentage, validation_percentage, max_num_images_per_class):
@@ -54,55 +51,33 @@ def create_image_lists(image_dir, testing_percentage, validation_percentage, max
     if not gfile.Exists(image_dir):
         tf.logging.error("Image directory '" + image_dir + "' not found.")
         return None
+
     result = {}
-    sub_dirs = [x[0] for x in gfile.Walk(image_dir)]
-    # The root directory comes first, so skip it.
-    is_root_dir = True
+    extensions = ['jpg', 'jpeg', 'JPG', 'JPEG']
+    sub_dirs = [d for d in os.listdir(image_dir) if os.path.isdir(os.path.join(image_dir, d))]
+
     for sub_dir in sub_dirs:
-        if is_root_dir:
-            is_root_dir = False
-            continue
-        extensions = ['jpg', 'jpeg', 'JPG', 'JPEG']
         file_list = []
         dir_name = os.path.basename(sub_dir)
-        if dir_name == image_dir:
-            continue
         tf.logging.info("Looking for images in '" + dir_name + "'")
         for extension in extensions:
             file_glob = os.path.join(image_dir, dir_name, '*.' + extension)
             file_list.extend(gfile.Glob(file_glob))
-        if not file_list:
-            tf.logging.warning('No files found')
-            continue
-        if len(file_list) < 20:
+        if not file_list or len(file_list) < 20:
             tf.logging.warning(
                 'WARNING: Folder has less than 20 images, which may cause issues.')
+            continue
+
         label_name = re.sub(r'[^a-z0-9]+', ' ', dir_name.lower())
         training_images = []
         testing_images = []
         validation_images = []
         for file_name in file_list:
             base_name = os.path.basename(file_name)
-            # We want to ignore anything after '_nohash_' in the file name when
-            # deciding which set to put an image in, the data set creator has a way of
-            # grouping photos that are close variations of each other. For example
-            # this is used in the plant disease data set to group multiple pictures of
-            # the same leaf.
-            hash_name = re.sub(r'_nohash_.*$', '', file_name)
-            # This looks a bit magical, but we need to decide whether this file should
-            # go into the training, testing, or validation sets, and we want to keep
-            # existing files in the same set even if more files are subsequently
-            # added.
-            # To do that, we need a stable way of deciding based on just the file name
-            # itself, so we do a hash of that and then use that to generate a
-            # probability value that we use to assign it.
-            hash_name_hashed = hashlib.sha1(compat.as_bytes(hash_name)).hexdigest()
-            percentage_hash = ((int(hash_name_hashed, 16) %
-                                (max_num_images_per_class + 1)) *
-                               (100.0 / max_num_images_per_class))
-            if percentage_hash < validation_percentage:
+            dice_roll = 100*random.random()
+            if dice_roll < validation_percentage:
                 validation_images.append(base_name)
-            elif percentage_hash < (testing_percentage + validation_percentage):
+            elif dice_roll < (testing_percentage + validation_percentage):
                 testing_images.append(base_name)
             else:
                 training_images.append(base_name)
