@@ -8,11 +8,11 @@ from tensorflow.keras.applications.mobilenet import MobileNet
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
-def create_model(num_labels, input_shape, learning_rate=1e-3, fully_trainable=False):
-    print("\tCreating an MobileNet model with Imagenet weights. "
-          "Classes: {}".format(num_labels))
+def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fully_trainable=False):
+    tf.logging.info("\tCreating an MobileNet model with Imagenet weights. "
+                    "Classes: {}".format(num_labels))
     base_model = MobileNet(weights='imagenet', include_top=False, input_shape=input_shape,
-                             input_tensor=tf.keras.Input(input_shape), pooling='avg')
+                           input_tensor=tf.keras.Input(input_shape), pooling='avg')
 
     pred_name = "predictions_{}".format(num_labels)
 
@@ -28,13 +28,14 @@ def create_model(num_labels, input_shape, learning_rate=1e-3, fully_trainable=Fa
     classifier = model.get_layer(pred_name)
     classifier.trainable = True
 
-    print(model.summary())
+    tf.logging.info(model.summary())
 
-    print("\tlast layer: {}".format(model.layers[-1].output_shape))
+    tf.logging.info("\tlast layers: {}".format(model.layers[-1].output_shape))
+    tf.logging.info("\tlast layers: {}, {}".format(model.layers[-2].name, model.layers[-2].output_shape))
 
-    optimizer = tf.keras.optimizers.SGD(lr=learning_rate, momentum=0.9)
+    if optimizer not in ["adam", "sgd"]:
+        optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.9)
 
-    # We will now compile and print out a summary of our model
     model.compile(loss='categorical_crossentropy',
                   optimizer=optimizer,
                   metrics=['accuracy'])
@@ -43,7 +44,7 @@ def create_model(num_labels, input_shape, learning_rate=1e-3, fully_trainable=Fa
 
 
 def create_generators(train_dir, val_dir, test_dir, batch_size, image_size=224):
-    #preprocess_input = tf.keras.applications.mobilenet.preprocess_input
+    # preprocess_input = tf.keras.applications.mobilenet.preprocess_input
 
     train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
     # ,
@@ -95,60 +96,63 @@ def get_folder_info(image_dir):
 def create_callbacks(output_model_path, summary_dir):
     callbacks = [
         tf.keras.callbacks.ModelCheckpoint(output_model_path, verbose=1),
-        tf.keras.callbacks.TensorBoard(log_dir=summary_dir, write_graph=True, write_images=True, histogram_freq=1)
+        tf.keras.callbacks.TensorBoard(log_dir=summary_dir, write_graph=True, write_images=True, histogram_freq=0)
     ]
     return callbacks
+
 
 def evaluate_model(path, image_gen):
     model = tf.contrib.saved_model.load_keras_model(path)
 
     model.compile(loss='categorical_crossentropy',
-                  optimizer="sgd",
+                  optimizer=tf.train.MomentumOptimizer(learning_rate=1e-3, momentum=0.9),
                   metrics=['accuracy'])
 
     _, accuracy = model.evaluate_generator(image_gen)
-    print('Accuracy: {}'.format(accuracy))
+    tf.logging.info("Accuracy: {}\n".format(accuracy))
 
 
 def main(_):
     train_dir = os.path.join(FLAGS.image_dir, "train")
     val_dir = os.path.join(FLAGS.image_dir, "val")
     test_dir = os.path.join(FLAGS.image_dir, "test")
-    retrained_model_path = os.path.join(FLAGS.model_dir, "retrained.h5")
+    graph_name = os.path.basename(FLAGS.output_graph)
+    retrained_model_path = os.path.join(FLAGS.model_dir, graph_name)
 
     num_train_images, num_labels = get_folder_info(train_dir)
 
     model = create_model(input_shape=(FLAGS.image_size, FLAGS.image_size, 3),
                          num_labels=num_labels,
-                         learning_rate=FLAGS.learning_rate)
+                         learning_rate=FLAGS.learning_rate,
+                         optimizer=FLAGS.optimizer_name)
 
     callbacks = create_callbacks(output_model_path=retrained_model_path, summary_dir=FLAGS.summaries_dir)
 
-    train_gen, val_gen, test_gen = create_generators(train_dir, val_dir, test_dir, batch_size=FLAGS.train_batch_size)
+    train_gen, val_gen, test_gen = create_generators(train_dir, val_dir, test_dir, batch_size=FLAGS.train_batch_size,
+                                                     image_size=FLAGS.image_size)
 
-    untrained_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir)
+    # untrained_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir)
+    # tf.logging.info('\n===\tTesting downloaded model:')
+    # evaluate_model(untrained_path, test_gen)
 
-    print('===\tTesting downloaded model:')
-    evaluate_model(untrained_path, test_gen)
+    tf.logging.info('\n===\tRetraining downloaded model.')
 
-
-    print('===\tRetraining downloaded model.')
-
+    steps_per_epoch = num_train_images // FLAGS.train_batch_size
     model.fit_generator(
         train_gen,
-        steps_per_epoch=num_train_images // FLAGS.train_batch_size,
-        epochs=1,
+        steps_per_epoch=10,  # steps_per_epoch,
+        epochs=FLAGS.how_many_training_steps // steps_per_epoch,
         validation_data=val_gen,
         validation_steps=10,
         callbacks=callbacks)
 
-    print('===\tTesting RETRAINED model:')
+    tf.logging.info('\n===\tTesting RETRAINED model:')
     loss, test_accuracy = model.evaluate_generator(test_gen)
-    print("===\tModel's test accuracy: {}".format(test_accuracy))
+    tf.logging.info("===\tModel's test accuracy: {}".format(test_accuracy))
 
     output_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir)
 
-    print('===\tTesting RE-LOADED model:')
+    tf.logging.info('\n===\tTesting RE-LOADED model:')
     evaluate_model(output_path, test_gen)
 
 
