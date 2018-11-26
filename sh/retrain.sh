@@ -9,18 +9,15 @@ WIDTH=1.0
 # adam or sgd
 OPTIMIZER="sgd"
 LEARNING_RATE=0.01
-BATCH_SIZE=16
-TEST_PERC=5
+BATCH_SIZE=8
 STEPS=500
 LABEL="bs_$BATCH_SIZE-lr_$LEARNING_RATE-opt_$OPTIMIZER"
 
 python -m scripts.retrain \
-  --bottleneck_dir=tf_files/bottlenecks \
   --model_dir=tf_files/models \
   --summaries_dir=tf_files/training_summaries/$LABEL \
   --output_graph="tf_files/retrained_graph_${WIDTH}.pb" \
   --image_dir=tf_files/split_flowers \
-  --testing_percentage=$TEST_PERC \
   --how_many_training_steps=$STEPS \
   --learning_rate=$LEARNING_RATE\
   --train_batch_size=$BATCH_SIZE \
