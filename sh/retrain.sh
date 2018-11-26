@@ -19,7 +19,7 @@ python -m scripts.retrain \
   --bottleneck_dir=tf_files/bottlenecks \
   --summaries_dir=tf_files/training_summaries/$LABEL \
   --output_graph="tf_files/retrained_graph_${WIDTH}.pb" \
-  --output_labels=tf_files/retrained_labels.txt \
+  --output_labels=tf_files/retrained_labels.npy \
   --image_dir=tf_files/split_flowers \
   --how_many_training_steps=$STEPS \
   --learning_rate=$LEARNING_RATE\

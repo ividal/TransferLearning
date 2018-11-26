@@ -23,8 +23,6 @@ import time
 import tensorflow as tf
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = '3'
-
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
@@ -50,7 +48,7 @@ def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fu
     return model
 
 
-def create_feature_extractor(input_shape, learning_rate=1e-3, optimizer=None, fully_trainable=False):
+def create_feature_extractor(input_shape, fully_trainable=False):
     tf.logging.info("\tCreating an MobileNet model with Imagenet weights. ")
     base_model = MobileNetV2(weights="imagenet", include_top=False, input_shape=input_shape,
                              input_tensor=tf.keras.Input(input_shape), pooling="avg")
@@ -90,8 +88,7 @@ def create_generators(train_dir, val_dir, test_dir, batch_size, image_size=224):
         zoom_range=0.2,
         horizontal_flip=True, preprocessing_function=preprocess_input)
 
-    val_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
-    test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+    datagen = tf.keras.preprocessing.image.ImageDataGenerator(preprocessing_function=preprocess_input)
 
     train_gen = train_datagen.flow_from_directory(
         train_dir,
@@ -99,13 +96,13 @@ def create_generators(train_dir, val_dir, test_dir, batch_size, image_size=224):
         batch_size=batch_size,
         class_mode="categorical")
 
-    val_gen = val_datagen.flow_from_directory(
+    val_gen = datagen.flow_from_directory(
         val_dir,
         target_size=(image_size, image_size),
         batch_size=batch_size,
         class_mode="categorical")
 
-    test_gen = test_datagen.flow_from_directory(
+    test_gen = datagen.flow_from_directory(
         test_dir,
         target_size=(image_size, image_size),
         batch_size=batch_size,
@@ -126,7 +123,6 @@ def get_folder_info(image_dir):
     num_images = len(file_list)
 
     return num_images, num_categories
-
 
 
 def create_callbacks(output_model_path, summary_dir):
@@ -178,9 +174,10 @@ def main(_):
 
     steps_per_epoch = num_train_images // FLAGS.train_batch_size
 
-    trained_classes = train_gen.classes
-    with open(FLAGS.labels_file, "w") as lf:
-        np.savetxt(lf, trained_classes)
+    trained_classes = train_gen.class_indices
+    classes_by_idx = {v: k for k, v in trained_classes.items()}
+    tf.logging.info("Saving trained classes to {}".format(FLAGS.output_labels))
+    np.save(FLAGS.output_labels, classes_by_idx)
 
     model.fit_generator(
         train_gen,
