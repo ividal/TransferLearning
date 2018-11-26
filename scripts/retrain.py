@@ -1,18 +1,59 @@
+# Copyright 2018 Irina Vidal Migallon. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+
 import argparse
 from glob import glob
 import os
 import sys
+import time
 import tensorflow as tf
-from tensorflow.keras.applications.mobilenet import MobileNet
+from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
 def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fully_trainable=False):
-    tf.logging.info("\tCreating an MobileNet model with Imagenet weights. "
-                    "Classes: {}".format(num_labels))
-    base_model = MobileNet(weights='imagenet', include_top=False, input_shape=input_shape,
+    base_model = create_feature_extractor(input_shape, learning_rate=1e-3, optimizer=optimizer, fully_trainable=fully_trainable)
+    model = add_classifier(base_model, num_labels)
+
+    if optimizer == "adam":
+        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    else:
+        optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.9)
+
+    tf.logging.info(model.summary())
+
+    model.compile(loss='categorical_crossentropy',
+                  optimizer=optimizer,
+                  metrics=['accuracy'])
+    return model
+
+def create_feature_extractor(input_shape, learning_rate=1e-3, optimizer=None, fully_trainable=False):
+    tf.logging.info("\tCreating an MobileNet model with Imagenet weights. ")
+    base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape,
                            input_tensor=tf.keras.Input(input_shape), pooling='avg')
+
+    for l in base_model.layers:
+        l.trainable = fully_trainable
+
+    return base_model
+
+
+def add_classifier(base_model, num_labels):
+    tf.logging.info("\tAdding a {} label classifier.".format(num_labels))
 
     pred_name = "predictions_{}".format(num_labels)
 
@@ -22,38 +63,22 @@ def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fu
     # create graph of your new model
     model = tf.keras.Model(inputs=base_model.input, outputs=predictions)
 
-    for l in model.layers:
-        l.trainable = fully_trainable
+    tf.logging.info("\tlast layers: {}".format(model.layers[-1].output_shape))
+    tf.logging.info("\tlast layers: {}, {}".format(model.layers[-2].name, model.layers[-2].output_shape))
 
     classifier = model.get_layer(pred_name)
     classifier.trainable = True
 
-    tf.logging.info(model.summary())
-
-    tf.logging.info("\tlast layers: {}".format(model.layers[-1].output_shape))
-    tf.logging.info("\tlast layers: {}, {}".format(model.layers[-2].name, model.layers[-2].output_shape))
-
-    if optimizer not in ["adam", "sgd"]:
-        optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.9)
-
-    model.compile(loss='categorical_crossentropy',
-                  optimizer=optimizer,
-                  metrics=['accuracy'])
-
     return model
 
-
 def create_generators(train_dir, val_dir, test_dir, batch_size, image_size=224):
-    # preprocess_input = tf.keras.applications.mobilenet.preprocess_input
-
-    train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
-    # ,
-    # rotation_range=40,
-    # width_shift_range=0.2,
-    # height_shift_range=0.2,
-    # shear_range=0.2,
-    # zoom_range=0.2,
-    # horizontal_flip=True)
+    train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+        rotation_range=40,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True, preprocessing_function=preprocess_input)
 
     val_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
     test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
@@ -118,6 +143,8 @@ def main(_):
     test_dir = os.path.join(FLAGS.image_dir, "test")
     graph_name = os.path.basename(FLAGS.output_graph)
     retrained_model_path = os.path.join(FLAGS.model_dir, graph_name)
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    tb_dir = os.path.join(FLAGS.summaries_dir, timestamp)
 
     num_train_images, num_labels = get_folder_info(train_dir)
 
@@ -126,7 +153,7 @@ def main(_):
                          learning_rate=FLAGS.learning_rate,
                          optimizer=FLAGS.optimizer_name)
 
-    callbacks = create_callbacks(output_model_path=retrained_model_path, summary_dir=FLAGS.summaries_dir)
+    callbacks = create_callbacks(output_model_path=retrained_model_path, summary_dir=tb_dir)
 
     train_gen, val_gen, test_gen = create_generators(train_dir, val_dir, test_dir, batch_size=FLAGS.train_batch_size,
                                                      image_size=FLAGS.image_size)
@@ -140,10 +167,10 @@ def main(_):
     steps_per_epoch = num_train_images // FLAGS.train_batch_size
     model.fit_generator(
         train_gen,
-        steps_per_epoch=10,  # steps_per_epoch,
+        steps_per_epoch=steps_per_epoch,
         epochs=FLAGS.how_many_training_steps // steps_per_epoch,
         validation_data=val_gen,
-        validation_steps=10,
+        validation_steps=5,
         callbacks=callbacks)
 
     tf.logging.info('\n===\tTesting RETRAINED model:')
