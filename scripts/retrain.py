@@ -16,35 +16,44 @@
 
 import argparse
 from glob import glob
+import numpy as np
 import os
 import sys
 import time
 import tensorflow as tf
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = '3'
+
 tf.logging.set_verbosity(tf.logging.INFO)
 
 
 def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fully_trainable=False):
-    base_model = create_feature_extractor(input_shape, learning_rate=1e-3, optimizer=optimizer, fully_trainable=fully_trainable)
+    available_optimizers = {
+        "sgd": tf.keras.optimizers.SGD(lr=learning_rate),
+        "adam": tf.keras.optimizers.Adam(lr=learning_rate)
+    }
+
+    base_model = create_feature_extractor(input_shape, fully_trainable=fully_trainable)
     model = add_classifier(base_model, num_labels)
 
-    if optimizer == "adam":
-        optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+    if optimizer in available_optimizers:
+        choice = available_optimizers[optimizer]
     else:
-        optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=0.9)
+        choice = available_optimizers["sgd"]
 
     tf.logging.info(model.summary())
 
-    model.compile(loss='categorical_crossentropy',
-                  optimizer=optimizer,
-                  metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy",
+                  optimizer=choice,
+                  metrics=["accuracy"])
     return model
+
 
 def create_feature_extractor(input_shape, learning_rate=1e-3, optimizer=None, fully_trainable=False):
     tf.logging.info("\tCreating an MobileNet model with Imagenet weights. ")
-    base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=input_shape,
-                           input_tensor=tf.keras.Input(input_shape), pooling='avg')
+    base_model = MobileNetV2(weights="imagenet", include_top=False, input_shape=input_shape,
+                             input_tensor=tf.keras.Input(input_shape), pooling="avg")
 
     for l in base_model.layers:
         l.trainable = fully_trainable
@@ -58,7 +67,7 @@ def add_classifier(base_model, num_labels):
     pred_name = "predictions_{}".format(num_labels)
 
     x = base_model.output
-    predictions = tf.keras.layers.Dense(num_labels, activation='softmax', name=pred_name)(x)
+    predictions = tf.keras.layers.Dense(num_labels, activation="softmax", name=pred_name)(x)
 
     # create graph of your new model
     model = tf.keras.Model(inputs=base_model.input, outputs=predictions)
@@ -70,6 +79,7 @@ def add_classifier(base_model, num_labels):
     classifier.trainable = True
 
     return model
+
 
 def create_generators(train_dir, val_dir, test_dir, batch_size, image_size=224):
     train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
@@ -87,19 +97,19 @@ def create_generators(train_dir, val_dir, test_dir, batch_size, image_size=224):
         train_dir,
         target_size=(image_size, image_size),
         batch_size=batch_size,
-        class_mode='categorical')
+        class_mode="categorical")
 
     val_gen = val_datagen.flow_from_directory(
         val_dir,
         target_size=(image_size, image_size),
         batch_size=batch_size,
-        class_mode='categorical')
+        class_mode="categorical")
 
     test_gen = test_datagen.flow_from_directory(
         test_dir,
         target_size=(image_size, image_size),
         batch_size=batch_size,
-        class_mode='categorical')
+        class_mode="categorical")
 
     return train_gen, val_gen, test_gen
 
@@ -107,7 +117,7 @@ def create_generators(train_dir, val_dir, test_dir, batch_size, image_size=224):
 def get_folder_info(image_dir):
     categories = [d for d in os.listdir(image_dir) if os.path.isdir(os.path.join(image_dir, d))]
     num_categories = len(categories)
-    extensions = ['jpg', 'jpeg', 'JPG', 'JPEG']
+    extensions = ["jpg", "jpeg", "JPG", "JPEG"]
     file_list = []
     for extension in extensions:
         file_glob = os.path.join(image_dir, "**/*.{}".format(extension))
@@ -116,6 +126,7 @@ def get_folder_info(image_dir):
     num_images = len(file_list)
 
     return num_images, num_categories
+
 
 
 def create_callbacks(output_model_path, summary_dir):
@@ -129,9 +140,9 @@ def create_callbacks(output_model_path, summary_dir):
 def evaluate_model(path, image_gen):
     model = tf.contrib.saved_model.load_keras_model(path)
 
-    model.compile(loss='categorical_crossentropy',
+    model.compile(loss="categorical_crossentropy",
                   optimizer=tf.train.MomentumOptimizer(learning_rate=1e-3, momentum=0.9),
-                  metrics=['accuracy'])
+                  metrics=["accuracy"])
 
     _, accuracy = model.evaluate_generator(image_gen)
     tf.logging.info("Accuracy: {}\n".format(accuracy))
@@ -158,13 +169,19 @@ def main(_):
     train_gen, val_gen, test_gen = create_generators(train_dir, val_dir, test_dir, batch_size=FLAGS.train_batch_size,
                                                      image_size=FLAGS.image_size)
 
-    # untrained_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir)
-    # tf.logging.info('\n===\tTesting downloaded model:')
-    # evaluate_model(untrained_path, test_gen)
+    untrained_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir).decode("utf-8")
 
-    tf.logging.info('\n===\tRetraining downloaded model.')
+    tf.logging.info("\n===\tInitial accuracy (before retraining):")
+    evaluate_model(untrained_path, test_gen)
+
+    tf.logging.info("\n===\tRetraining downloaded model.")
 
     steps_per_epoch = num_train_images // FLAGS.train_batch_size
+
+    trained_classes = train_gen.classes
+    with open(FLAGS.labels_file, "w") as lf:
+        np.savetxt(lf, trained_classes)
+
     model.fit_generator(
         train_gen,
         steps_per_epoch=steps_per_epoch,
@@ -173,14 +190,15 @@ def main(_):
         validation_steps=5,
         callbacks=callbacks)
 
-    tf.logging.info('\n===\tTesting RETRAINED model:')
+    tf.logging.info("\n===\tTesting RETRAINED model:")
     loss, test_accuracy = model.evaluate_generator(test_gen)
     tf.logging.info("===\tModel's test accuracy: {}".format(test_accuracy))
 
-    output_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir)
+    output_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir).decode("utf-8")
 
-    tf.logging.info('\n===\tTesting RE-LOADED model:')
+    tf.logging.info("\n===\tFinal model accuracy:")
     evaluate_model(output_path, test_gen)
+    tf.logging.info("\n===\tFinal model saved in: {}".format(output_path))
 
 
 if __name__ == "__main__":
