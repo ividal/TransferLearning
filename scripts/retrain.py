@@ -99,6 +99,16 @@ def create_callbacks(output_model_path, summary_dir):
     ]
     return callbacks
 
+def evaluate_model(path, image_gen):
+    model = tf.contrib.saved_model.load_keras_model(path)
+
+    model.compile(loss='categorical_crossentropy',
+                  optimizer="sgd",
+                  metrics=['accuracy'])
+
+    _, accuracy = model.evaluate_generator(image_gen)
+    print('Accuracy: {}'.format(accuracy))
+
 
 def main(_):
     train_dir = os.path.join(FLAGS.image_dir, "train")
@@ -117,18 +127,12 @@ def main(_):
     train_gen, val_gen, test_gen = create_generators(train_dir, val_dir, test_dir, batch_size=FLAGS.train_batch_size)
 
     untrained_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir)
-    untrained = tf.contrib.saved_model.load_keras_model(untrained_path)
-    optimizer = tf.keras.optimizers.SGD(lr=0.001, momentum=0.9)
 
-    # We will now compile and print out a summary of our model
-    untrained.compile(loss='categorical_crossentropy',
-                  optimizer=optimizer,
-                  metrics=['accuracy'])
+    print('===\tTesting downloaded model:')
+    evaluate_model(untrained_path, test_gen)
 
-    print('Testing untrained model:')
-    _, untrained_accuracy = untrained.evaluate_generator(test_gen)
-    print('Untrained accuracy: {}'.format(untrained_accuracy))
 
+    print('===\tRetraining downloaded model.')
 
     model.fit_generator(
         train_gen,
@@ -138,22 +142,14 @@ def main(_):
         validation_steps=10,
         callbacks=callbacks)
 
-    print('Testing retrained model:')
+    print('===\tTesting RETRAINED model:')
     loss, test_accuracy = model.evaluate_generator(test_gen)
-    print("Model's test accuracy: {}".format(test_accuracy))
+    print("===\tModel's test accuracy: {}".format(test_accuracy))
 
     output_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir)
-    loaded_model = tf.contrib.saved_model.load_keras_model(output_path)
-    optimizer = tf.keras.optimizers.SGD()
 
-    # We will now compile and print out a summary of our model
-    loaded_model.compile(loss='categorical_crossentropy',
-                  optimizer=optimizer,
-                  metrics=['accuracy'])
-
-    print('Testing loaded model:')
-    _, loaded_accuracy = loaded_model.evaluate_generator(test_gen)
-    print('Test accuracy: {}'.format(loaded_accuracy))
+    print('===\tTesting RE-LOADED model:')
+    evaluate_model(output_path, test_gen)
 
 
 if __name__ == "__main__":
