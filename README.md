@@ -48,17 +48,11 @@ Assuming you want to store your virtual environment under this same repo (FYI, o
 ~/TransferLearning$ bash sh/download.sh
 ```
 
-**Other systems** (or if you want to do each step manually):
-1. Download the pre-trained model from [here](https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_1.0_224_frozen.tgz), into tf_files/models.
-```sh
-# Assuming you have wget installed (`sudo apt-get install wget`):
-~/TransferLearning$ wget -P tf_files/models/ https://storage.googleapis.com/download.tensorflow.org/models/mobilenet_v1_1.0_224_frozen.tgz
-```
-2. Download and extract the sample data ([flowers dataset](http://download.tensorflow.org/example_images/flower_photos.tgz)) to tf_files.
-```sh
-# Assuming you have wget installed (`sudo apt-get install wget`):
-~/TransferLearning$ wget -qO- http://download.tensorflow.org/example_images/flower_photos.tgz | tar --one-top-level=tf_files -xvz
-```
+This script will:
+ 1. download a [pretrained model](https://github.com/fchollet/deep-learning-models/releases/download/v0.6/mobilenet_1_0_224_tf_no_top.h5)
+and save it in the correct location.
+2. download a flower dataset, already [split](https://www.dropbox.com/s/n257xs7qvnlfik8/split_flowers.tgz?dl=0) into training, validation and testing sets, and extract it to the correct location.
+
 
 #### Resulting files ####
 Whichever method you chose, your folder structure should be:
@@ -66,21 +60,31 @@ Whichever method you chose, your folder structure should be:
 ```
 ~/TransferLearning$ tree tf_files/
 tf_files/
-├── flower_photos
-│   ├── daisy
-│   │    ├── image97999.jpg
-│   │    └── ...
-│   ├── dandelion
-│   ├── roses
-│   ├── sunflowers
-│   └── tulips
-├── models
-│   ├── mobilenet_v1_1.0_224
-│   │   ├── frozen_graph.pb
-│   │   ├── labels.txt
-│   │   └── quantized_graph.pb
-│   ├── mobilenet_v1_1.0_224_frozen.tgz
-│   └── save_mobilenet_tgz_here
+├── split_flowers
+|   ├── train
+|   │   ├── daisy
+|   │   │    ├── image12345.jpg
+|   │   │    └── ...
+|   │   ├── dandelion
+|   │   ├── roses
+|   │   ├── sunflowers
+|   │   └── tulips
+|   ├── val   
+|   │   ├── daisy
+|   │   │    ├── image456779.jpg
+|   │   │    └── ...
+|   │   ├── dandelion
+|   │   ├── roses
+|   │   ├── sunflowers
+|   │   └── tulips
+|   └── test
+|       ├── daisy
+|       │    ├── image234673.jpg
+|       │    └── ...
+|       ├── dandelion
+|       ├── roses
+|       ├── sunflowers
+|       └── tulips
 ...
 ```
 
@@ -88,8 +92,8 @@ tf_files/
 ## Finding your way ###
 `sh` is your entry point; there's a bash script to showcase the usage of the retraining code.
 
-`scripts` contains the retraining code; notice there have been some modifications to the original Tensorflow github script, 
-but the interface is the same.
+`scripts` contains the retraining code; notice there have been major modifications in the API (Tensorflow has changed _a lot_, thankfully) 
+since the original tutorial was released.
 
 `tf_files` contains data, models and tensorboard logs (training_summaries), just
  like in the original Tensorflow Transfer Learning [tutorial](https://www.tensorflow.org/tutorials/image_retraining). However, you will be able to see
