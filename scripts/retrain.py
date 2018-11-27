@@ -40,13 +40,23 @@ def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fu
     :param fully_trainable: whether we want the feature extractor layers to be trainable or not
     :return: A compiled model ready to be trained or used for inference.
     """
-    inputs = tf.keras.Input(shape=input_shape)
-    x = tf.keras.layers.Dense(4, activation=tf.nn.relu)(inputs)
-    outputs = tf.keras.layers.Dense(5, activation=tf.nn.softmax)(x)
-    model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    available_optimizers = {
+        "sgd": tf.keras.optimizers.SGD(lr=learning_rate),
+        "adam": tf.keras.optimizers.Adam(lr=learning_rate)
+    }
+
+    base_model = create_feature_extractor(input_shape, fully_trainable=fully_trainable)
+    model = add_classifier(base_model, num_labels)
+
+    if optimizer in available_optimizers:
+        choice = available_optimizers[optimizer]
+    else:
+        choice = available_optimizers["sgd"]
+
+    logger.info(model.summary())
 
     model.compile(loss="categorical_crossentropy",
-                  optimizer="sgd",
+                  optimizer=choice,
                   metrics=["accuracy"])
     return model
 
@@ -60,7 +70,11 @@ def create_feature_extractor(input_shape, fully_trainable=False):
     :return: a tf.keras model, not yet compiled
     """
     logger.info("\tCreating an MobileNet model with Imagenet weights. ")
-    base_model = None
+    base_model = MobileNetV2(weights="imagenet", include_top=False, input_shape=input_shape,
+                             input_tensor=tf.keras.Input(input_shape), pooling="avg")
+
+    for l in base_model.layers:
+        l.trainable = fully_trainable
 
     return base_model
 
@@ -74,9 +88,21 @@ def add_classifier(base_model, num_labels):
     """
     logger.info("\tAdding a {} label classifier.".format(num_labels))
 
-    model = None
-    return model
+    pred_name = "predictions_{}".format(num_labels)
 
+    x = base_model.output
+    predictions = tf.keras.layers.Dense(num_labels, activation="softmax", name=pred_name)(x)
+
+    # create graph of your new model
+    model = tf.keras.Model(inputs=base_model.input, outputs=predictions)
+
+    logger.info("\tlast layers: {}".format(model.layers[-1].output_shape))
+    logger.info("\tlast layers: {}, {}".format(model.layers[-2].name, model.layers[-2].output_shape))
+
+    classifier = model.get_layer(pred_name)
+    classifier.trainable = True
+
+    return model
 
 
 def create_data_feeders(train_dir, val_dir, test_dir, batch_size, image_size=224):
@@ -151,6 +177,14 @@ def main(_):
     save_labels_to_file(train_gen, FLAGS.output_labels)
 
     logger.info("\n===\tCreating a classification model based on pre-trained weights.")
+
+    num_train_images = 2055
+    num_labels = 5
+
+    model = create_model(input_shape=(FLAGS.image_size, FLAGS.image_size, 3),
+                         num_labels=num_labels,
+                         learning_rate=FLAGS.learning_rate,
+                         optimizer=FLAGS.optimizer_name)
 
     logger.info("\n===\tPreparing Tensorboard callback, to monitor training.")
 
