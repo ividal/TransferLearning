@@ -12,7 +12,7 @@ If you want to do some reading beforehand, you'll find the following useful:
 
 ## How do I get set up? ###
 
-1. Make sure you have wget installed: `sudo apt-get install wget`.
+1. Make sure you have wget and python3-venv installed: `sudo apt-get install wget python3-venv`.
 2. Make sure you create a new virtual environment (instructions below).
 3. Install the dependencies with the `requirements.txt` in this repo. This includes the latest Tensorflow.
  **We will be using features released on the latest version (1.12).**
@@ -30,7 +30,8 @@ Python 3.5+ should work. Instructions to create a Python3 based environment are 
 
 Assuming you want to store your virtual environment under this same repo (FYI, other people prefer to do so under `$HOME/.venvs`):
 ```sh
-~/TransferLearning$ python3 -m venv venv-tf
+~/TransferLearning$ sudo apt-get python3.6-venv 
+~/TransferLearning$ python3.6 -m venv venv-tf
 ~/TransferLearning$ source venv-tf/bin/activate
 ~/TransferLearning$ pip install -r requirements.txt
 ```
