@@ -119,7 +119,16 @@ def evaluate_model(path, image_gen):
 
 
 def save_labels_to_file(train_gen, labels_file):
-    pass
+    """
+    Saves the relationship between class names to its one-hot encoding
+    :param train_gen: Training data generator
+    :param labels_file: output labels file path
+    """
+    os.makedirs(os.path.dirname(labels_file), exist_ok=True)
+    trained_classes = train_gen.class_indices
+    classes_by_idx = {v: k for k, v in trained_classes.items()}
+    logger.info("Saving trained classes to {}".format(labels_file))
+    np.save(labels_file, classes_by_idx)
 
 
 def main(_):
@@ -138,6 +147,8 @@ def main(_):
                                                        image_size=FLAGS.image_size)
 
     logger.info("\n===\tSaving key file with label names <> index conversion.")
+
+    save_labels_to_file(train_gen, FLAGS.output_labels)
 
     logger.info("\n===\tCreating a classification model based on pre-trained weights.")
 
