@@ -16,14 +16,18 @@
 
 import argparse
 from glob import glob
+import logging
 import numpy as np
 import os
+from distutils.dir_util import copy_tree
 import sys
 import time
 import tensorflow as tf
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
 
-tf.logging.set_verbosity(tf.logging.INFO)
+tf.logging.set_verbosity(tf.logging.ERROR)
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger("training")
 
 
 def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fully_trainable=False):
@@ -40,7 +44,7 @@ def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fu
     else:
         choice = available_optimizers["sgd"]
 
-    tf.logging.info(model.summary())
+    logger.info(model.summary())
 
     model.compile(loss="categorical_crossentropy",
                   optimizer=choice,
@@ -49,7 +53,7 @@ def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fu
 
 
 def create_feature_extractor(input_shape, fully_trainable=False):
-    tf.logging.info("\tCreating an MobileNet model with Imagenet weights. ")
+    logger.info("\tCreating an MobileNet model with Imagenet weights. ")
     base_model = MobileNetV2(weights="imagenet", include_top=False, input_shape=input_shape,
                              input_tensor=tf.keras.Input(input_shape), pooling="avg")
 
@@ -60,7 +64,7 @@ def create_feature_extractor(input_shape, fully_trainable=False):
 
 
 def add_classifier(base_model, num_labels):
-    tf.logging.info("\tAdding a {} label classifier.".format(num_labels))
+    logger.info("\tAdding a {} label classifier.".format(num_labels))
 
     pred_name = "predictions_{}".format(num_labels)
 
@@ -70,8 +74,8 @@ def add_classifier(base_model, num_labels):
     # create graph of your new model
     model = tf.keras.Model(inputs=base_model.input, outputs=predictions)
 
-    tf.logging.info("\tlast layers: {}".format(model.layers[-1].output_shape))
-    tf.logging.info("\tlast layers: {}, {}".format(model.layers[-2].name, model.layers[-2].output_shape))
+    logger.info("\tlast layers: {}".format(model.layers[-1].output_shape))
+    logger.info("\tlast layers: {}, {}".format(model.layers[-2].name, model.layers[-2].output_shape))
 
     classifier = model.get_layer(pred_name)
     classifier.trainable = True
@@ -79,11 +83,10 @@ def add_classifier(base_model, num_labels):
     return model
 
 
-def create_generators(train_dir, val_dir, test_dir, batch_size, image_size=224):
+def create_data_feeders(train_dir, val_dir, test_dir, batch_size, image_size=224):
     train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
-        rotation_range=40,
-        width_shift_range=0.2,
-        height_shift_range=0.2,
+        width_shift_range=0.1,
+        height_shift_range=0.1,
         shear_range=0.2,
         zoom_range=0.2,
         horizontal_flip=True, preprocessing_function=preprocess_input)
@@ -141,17 +144,32 @@ def evaluate_model(path, image_gen):
                   metrics=["accuracy"])
 
     _, accuracy = model.evaluate_generator(image_gen)
-    tf.logging.info("Accuracy: {}\n".format(accuracy))
+    logger.info("\tAccuracy: {}\n".format(accuracy))
+
+
+def save_labels_to_file(train_gen, labels_file):
+    os.makedirs(os.path.dirname(labels_file), exist_ok=True)
+    trained_classes = train_gen.class_indices
+    classes_by_idx = {v: k for k, v in trained_classes.items()}
+    logger.info("Saving trained classes to {}".format(labels_file))
+    np.save(labels_file, classes_by_idx)
 
 
 def main(_):
     train_dir = os.path.join(FLAGS.image_dir, "train")
     val_dir = os.path.join(FLAGS.image_dir, "val")
     test_dir = os.path.join(FLAGS.image_dir, "test")
-    graph_name = os.path.basename(FLAGS.output_graph)
-    retrained_model_path = os.path.join(FLAGS.model_dir, graph_name)
+    checkpoint_dir = os.path.join(os.path.dirname(FLAGS.model_dir), "checkpoints")
+    checkpoint_path = os.path.join(checkpoint_dir, "checkpoint.pb")
+    os.makedirs(checkpoint_dir, exist_ok=True)
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     tb_dir = os.path.join(FLAGS.summaries_dir, timestamp)
+
+    train_gen, val_gen, test_gen = create_data_feeders(train_dir, val_dir, test_dir,
+                                                       batch_size=FLAGS.train_batch_size,
+                                                       image_size=FLAGS.image_size)
+
+    save_labels_to_file(train_gen, FLAGS.output_labels)
 
     num_train_images, num_labels = get_folder_info(train_dir)
 
@@ -160,24 +178,16 @@ def main(_):
                          learning_rate=FLAGS.learning_rate,
                          optimizer=FLAGS.optimizer_name)
 
-    callbacks = create_callbacks(output_model_path=retrained_model_path, summary_dir=tb_dir)
+    callbacks = create_callbacks(output_model_path=checkpoint_path,
+                                 summary_dir=tb_dir)
 
-    train_gen, val_gen, test_gen = create_generators(train_dir, val_dir, test_dir, batch_size=FLAGS.train_batch_size,
-                                                     image_size=FLAGS.image_size)
-
-    untrained_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir).decode("utf-8")
-
-    tf.logging.info("\n===\tInitial accuracy (before retraining):")
+    logger.info("\n===\tInitial accuracy (before retraining):")
+    untrained_path = tf.contrib.saved_model.save_keras_model(model, checkpoint_dir).decode("utf-8")
     evaluate_model(untrained_path, test_gen)
 
-    tf.logging.info("\n===\tRetraining downloaded model.")
+    logger.info("\n===\tRetraining downloaded model.")
 
     steps_per_epoch = num_train_images // FLAGS.train_batch_size
-
-    trained_classes = train_gen.class_indices
-    classes_by_idx = {v: k for k, v in trained_classes.items()}
-    tf.logging.info("Saving trained classes to {}".format(FLAGS.output_labels))
-    np.save(FLAGS.output_labels, classes_by_idx)
 
     model.fit_generator(
         train_gen,
@@ -187,15 +197,11 @@ def main(_):
         validation_steps=5,
         callbacks=callbacks)
 
-    tf.logging.info("\n===\tTesting RETRAINED model:")
-    loss, test_accuracy = model.evaluate_generator(test_gen)
-    tf.logging.info("===\tModel's test accuracy: {}".format(test_accuracy))
-
-    output_path = tf.contrib.saved_model.save_keras_model(model, FLAGS.model_dir).decode("utf-8")
-
-    tf.logging.info("\n===\tFinal model accuracy:")
-    evaluate_model(output_path, test_gen)
-    tf.logging.info("\n===\tFinal model saved in: {}".format(output_path))
+    output_path = tf.contrib.saved_model.save_keras_model(model, checkpoint_dir).decode("utf-8")
+    copy_tree(output_path, FLAGS.model_dir)
+    logger.info("\n===\tFinal model saved in: {}".format(FLAGS.model_dir))
+    logger.info("\n===\tFinal model accuracy:")
+    evaluate_model(FLAGS.model_dir, test_gen)
 
 
 if __name__ == "__main__":
@@ -205,12 +211,6 @@ if __name__ == "__main__":
         type=str,
         default="",
         help="Path to folders of labeled images."
-    )
-    parser.add_argument(
-        "--output_graph",
-        type=str,
-        default="/tmp/output_graph.pb",
-        help="Where to save the trained graph."
     )
     parser.add_argument(
         "--output_labels",
@@ -235,24 +235,6 @@ if __name__ == "__main__":
         type=float,
         default=0.01,
         help="How large a learning rate to use when training."
-    )
-    parser.add_argument(
-        "--testing_percentage",
-        type=int,
-        default=10,
-        help="What percentage of images to use as a test set."
-    )
-    parser.add_argument(
-        "--validation_percentage",
-        type=int,
-        default=10,
-        help="What percentage of images to use as a validation set."
-    )
-    parser.add_argument(
-        "--eval_step_interval",
-        type=int,
-        default=10,
-        help="How often to evaluate the training results."
     )
     parser.add_argument(
         "--train_batch_size",
@@ -287,25 +269,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_dir",
         type=str,
-        default="/tmp/imagenet",
+        default="tf_files/models/retrained",
         help="""\
-      Path to classify_image_graph_def.pb,
-      imagenet_synset_to_human_label_map.txt, and
-      imagenet_2012_challenge_label_map_proto.pbtxt.\
-      """
-    )
-    parser.add_argument(
-        "--bottleneck_dir",
-        type=str,
-        default="/tmp/bottleneck",
-        help="Path to cache bottleneck layer values as files."
-    )
-    parser.add_argument(
-        "--final_tensor_name",
-        type=str,
-        default="final_result",
-        help="""\
-      The name of the output classification layer in the retrained graph.\
+      Path to store the exported tf.keras model in a format that tensorflow can cleanly import and serve. It must be 
+      a directory, since SavedModel has its own internal structure.\
       """
     )
     parser.add_argument(
@@ -316,14 +283,6 @@ if __name__ == "__main__":
       Which model architecture to use. For faster or smaller models, choose a MobileNet with the 
       form 'mobilenet_<parameter size>_<input_size>'. For example, 'mobilenet_1.0_224' will pick 
       a model that is 17 MB in size and takes 224 pixel input images.\
-      """)
-    parser.add_argument(
-        "--max_num_images_per_class",
-        type=int,
-        default=2 ** 27 - 1,
-        help="""\
-      The maximum number of images to be allowed for a single class. The default number is huge 
-      even for COCO or ImageNet standards (2**27-1).\
       """)
     parser.add_argument(
         "--optimizer_name",
@@ -339,6 +298,13 @@ if __name__ == "__main__":
         help="""\
       The image width (and height, they're square) to use. Accepted values are currently 224, 160 and 128.\
       """)
-
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=10,
+        help="""\
+      Also used to pace training and affect the visualization of the training. If used together \
+      with the number of steps, steps_per_epoch will be tweaked.\
+      """)
     FLAGS, unparsed = parser.parse_known_args()
     tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
