@@ -31,6 +31,15 @@ logger = logging.getLogger("training")
 
 
 def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fully_trainable=False):
+    """
+    Builds the neural network and compiles the model with the desired optimizer.
+    :param num_labels: total number of categories of our multiclass classifier
+    :param input_shape: the 2D (h, w) of our input
+    :param learning_rate: the learning rate for our optimizer
+    :param optimizer: either a tf.keras optimizer or a tf.train.optimizer
+    :param fully_trainable: whether we want the feature extractor layers to be trainable or not
+    :return: A compiled model ready to be trained or used for inference.
+    """
     available_optimizers = {
         "sgd": tf.keras.optimizers.SGD(lr=learning_rate),
         "adam": tf.keras.optimizers.Adam(lr=learning_rate)
@@ -53,6 +62,13 @@ def create_model(num_labels, input_shape, learning_rate=1e-3, optimizer=None, fu
 
 
 def create_feature_extractor(input_shape, fully_trainable=False):
+    """
+    Builds a NN model that takes in an image and produces bottleneck descriptors, i.e. it does not have a
+    classification head. Preferably based on a model with pre-trained weights.
+    :param input_shape: 2D (h, w) of the input.
+    :param fully_trainable: Whether the layers should be trainable or not
+    :return: a tf.keras model, not yet compiled
+    """
     logger.info("\tCreating an MobileNet model with Imagenet weights. ")
     base_model = MobileNetV2(weights="imagenet", include_top=False, input_shape=input_shape,
                              input_tensor=tf.keras.Input(input_shape), pooling="avg")
@@ -64,6 +80,12 @@ def create_feature_extractor(input_shape, fully_trainable=False):
 
 
 def add_classifier(base_model, num_labels):
+    """
+    Adds the final classifying top to our feature extraction model.
+    :param base_model: the feature extractor
+    :param num_labels: the number of classes of this multiclass classifier
+    :return: a classification architecture based on the passed feature extractor
+    """
     logger.info("\tAdding a {} label classifier.".format(num_labels))
 
     pred_name = "predictions_{}".format(num_labels)
@@ -114,21 +136,13 @@ def create_data_feeders(train_dir, val_dir, test_dir, batch_size, image_size=224
     return train_gen, val_gen, test_gen
 
 
-def get_folder_info(image_dir):
-    categories = [d for d in os.listdir(image_dir) if os.path.isdir(os.path.join(image_dir, d))]
-    num_categories = len(categories)
-    extensions = ["jpg", "jpeg", "JPG", "JPEG"]
-    file_list = []
-    for extension in extensions:
-        file_glob = os.path.join(image_dir, "**/*.{}".format(extension))
-        file_list.extend(glob(file_glob))
-
-    num_images = len(file_list)
-
-    return num_images, num_categories
-
-
 def create_callbacks(output_model_path, summary_dir):
+    """
+    Enables tasks to be done after every batch
+    :param output_model_path: path to save checkpoints in
+    :param summary_dir: directory that tensorboard can monitor for events
+    :return: a list of callbacks
+    """
     callbacks = [
         tf.keras.callbacks.ModelCheckpoint(output_model_path, verbose=1),
         tf.keras.callbacks.TensorBoard(log_dir=summary_dir, write_graph=True, write_images=True, histogram_freq=0)
@@ -148,6 +162,11 @@ def evaluate_model(path, image_gen):
 
 
 def save_labels_to_file(train_gen, labels_file):
+    """
+    Saves the relationship between class names to its one-hot encoding
+    :param train_gen: Training data generator
+    :param labels_file: output labels file path
+    """
     os.makedirs(os.path.dirname(labels_file), exist_ok=True)
     trained_classes = train_gen.class_indices
     classes_by_idx = {v: k for k, v in trained_classes.items()}
@@ -165,25 +184,33 @@ def main(_):
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     tb_dir = os.path.join(FLAGS.summaries_dir, timestamp)
 
+    logger.info("\n===\tSetting up data loaders for train, val and test data.")
     train_gen, val_gen, test_gen = create_data_feeders(train_dir, val_dir, test_dir,
                                                        batch_size=FLAGS.train_batch_size,
                                                        image_size=FLAGS.image_size)
 
+    logger.info("\n===\tSaving key file with label names <> index conversion.")
+
     save_labels_to_file(train_gen, FLAGS.output_labels)
 
-    num_train_images, num_labels = get_folder_info(train_dir)
+    logger.info("\n===\tCreating a classification model based on pre-trained weights.")
+
+    num_train_images = 2055
+    num_labels = 5
 
     model = create_model(input_shape=(FLAGS.image_size, FLAGS.image_size, 3),
                          num_labels=num_labels,
                          learning_rate=FLAGS.learning_rate,
                          optimizer=FLAGS.optimizer_name)
 
-    callbacks = create_callbacks(output_model_path=checkpoint_path,
-                                 summary_dir=tb_dir)
-
     logger.info("\n===\tInitial accuracy (before retraining):")
     untrained_path = tf.contrib.saved_model.save_keras_model(model, checkpoint_dir).decode("utf-8")
     evaluate_model(untrained_path, test_gen)
+
+    logger.info("\n===\tPreparing Tensorboard callback, to monitor training.")
+
+    callbacks = create_callbacks(output_model_path=checkpoint_path,
+                                 summary_dir=tb_dir)
 
     logger.info("\n===\tRetraining downloaded model.")
 
@@ -197,10 +224,12 @@ def main(_):
         validation_steps=5,
         callbacks=callbacks)
 
+    logger.info(
+        "\n===\tExporting the model so it can be served (TF Serving, TF Lite, etc.) to: {}".format(FLAGS.model_dir))
     output_path = tf.contrib.saved_model.save_keras_model(model, checkpoint_dir).decode("utf-8")
     copy_tree(output_path, FLAGS.model_dir)
-    logger.info("\n===\tFinal model saved in: {}".format(FLAGS.model_dir))
-    logger.info("\n===\tFinal model accuracy:")
+
+    logger.info("\n===\tReporting final model accuracy:")
     evaluate_model(FLAGS.model_dir, test_gen)
 
 
