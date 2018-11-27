@@ -151,7 +151,14 @@ def create_callbacks(output_model_path, summary_dir):
 
 
 def evaluate_model(path, image_gen):
-    pass
+    model = tf.contrib.saved_model.load_keras_model(path)
+
+    model.compile(loss="categorical_crossentropy",
+                  optimizer=tf.train.MomentumOptimizer(learning_rate=1e-3, momentum=0.9),
+                  metrics=["accuracy"])
+
+    _, accuracy = model.evaluate_generator(image_gen)
+    logger.info("\tAccuracy: {}\n".format(accuracy))
 
 
 def save_labels_to_file(train_gen, labels_file):
@@ -202,7 +209,7 @@ def main(_):
                                  summary_dir=tb_dir)
 
     logger.info("\n===\tRetraining downloaded model.")
-    
+
     steps_per_epoch = num_train_images // FLAGS.train_batch_size
 
     model.fit_generator(
@@ -213,9 +220,13 @@ def main(_):
         validation_steps=5,
         callbacks=callbacks)
 
-    logger.info("\n===\tExporting the model so it can be served (TF Serving, TF Lite, etc.).")
+    logger.info(
+        "\n===\tExporting the model so it can be served (TF Serving, TF Lite, etc.) to: {}".format(FLAGS.model_dir))
+    output_path = tf.contrib.saved_model.save_keras_model(model, checkpoint_dir).decode("utf-8")
+    copy_tree(output_path, FLAGS.model_dir)
 
-    logger.info("\n===\tReporting final model accuracy.")
+    logger.info("\n===\tReporting final model accuracy:")
+    evaluate_model(FLAGS.model_dir, test_gen)
 
 
 if __name__ == "__main__":
