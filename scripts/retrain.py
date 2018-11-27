@@ -78,8 +78,36 @@ def add_classifier(base_model, num_labels):
     return model
 
 
+
 def create_data_feeders(train_dir, val_dir, test_dir, batch_size, image_size=224):
-    return None
+    train_datagen = tf.keras.preprocessing.image.ImageDataGenerator(
+        width_shift_range=0.1,
+        height_shift_range=0.1,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True, preprocessing_function=preprocess_input)
+
+    datagen = tf.keras.preprocessing.image.ImageDataGenerator(preprocessing_function=preprocess_input)
+
+    train_gen = train_datagen.flow_from_directory(
+        train_dir,
+        target_size=(image_size, image_size),
+        batch_size=batch_size,
+        class_mode="categorical")
+
+    val_gen = datagen.flow_from_directory(
+        val_dir,
+        target_size=(image_size, image_size),
+        batch_size=batch_size,
+        class_mode="categorical")
+
+    test_gen = datagen.flow_from_directory(
+        test_dir,
+        target_size=(image_size, image_size),
+        batch_size=batch_size,
+        class_mode="categorical")
+
+    return train_gen, val_gen, test_gen
 
 
 def create_callbacks(output_model_path, summary_dir):
@@ -105,6 +133,9 @@ def main(_):
     tb_dir = os.path.join(FLAGS.summaries_dir, timestamp)
 
     logger.info("\n===\tSetting up data loaders for train, val and test data.")
+    train_gen, val_gen, test_gen = create_data_feeders(train_dir, val_dir, test_dir,
+                                                       batch_size=FLAGS.train_batch_size,
+                                                       image_size=FLAGS.image_size)
 
     logger.info("\n===\tSaving key file with label names <> index conversion.")
 
