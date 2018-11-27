@@ -38,12 +38,13 @@ Assuming you want to store your virtual environment under this same repo (FYI, o
 
 #### GPU users
 
-**Only** if you already have a GPU and **working CUDA** installation:
+**Only** if you already have a GPU and **working CUDA** installation, do this in addition to the commands above:
 
 ```sh
 ~/TransferLearning$ pip install tensorflow-gpu
 ``` 
 
+(i.e. same as above **and** install tensorflow-gpu on top.)
 ### Pre-trained model & new dataset ###
 **Linux users**: run this from the repo root folder:
 ```sh
@@ -142,7 +143,7 @@ Tensorboard (to see what's going on).
 
 We will be re-implementing different modules to load images, load pre-trained models and train.
 
-The starting point being branch `workshop`.
+The ranch `workshop` contains incremental commits, showing building blocks one by one.
 
 ## License ###
 Modifications are under the same Apache license as the original Tensorflow code.
