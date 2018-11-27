@@ -49,7 +49,7 @@ Assuming you want to store your virtual environment under this same repo (FYI, o
 ```
 
 This script will:
- 1. download a [pretrained model](https://github.com/fchollet/deep-learning-models/releases/download/v0.6/mobilenet_1_0_224_tf_no_top.h5)
+1. download a [pretrained model](https://github.com/fchollet/deep-learning-models/releases/download/v0.6/mobilenet_1_0_224_tf_no_top.h5)
 and save it in the correct location.
 2. download a flower dataset, already [split](https://www.dropbox.com/s/n257xs7qvnlfik8/split_flowers.tgz?dl=0) into training, validation and testing sets, and extract it to the correct location.
 
@@ -107,11 +107,11 @@ and training.
 
 ## Tensorboard ####
 Notice tf_files/training_summaries contains the following structure:
-   * architecture
-      * training_timestamp
-        * train
-        * validation
 
+experiment_label
+└── training_timestamp1
+    └── events_file
+    
 This way you will be able to compare the loss function and other metrics from different trainings in the same Tensoboard
 plot. If you don't fully follow this currently, don't worry, it will be explained during the Workshop.
 
