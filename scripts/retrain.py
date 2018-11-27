@@ -203,6 +203,10 @@ def main(_):
                          learning_rate=FLAGS.learning_rate,
                          optimizer=FLAGS.optimizer_name)
 
+    logger.info("\n===\tInitial accuracy (before retraining):")
+    untrained_path = tf.contrib.saved_model.save_keras_model(model, checkpoint_dir).decode("utf-8")
+    evaluate_model(untrained_path, test_gen)
+
     logger.info("\n===\tPreparing Tensorboard callback, to monitor training.")
 
     callbacks = create_callbacks(output_model_path=checkpoint_path,
