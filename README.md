@@ -1,7 +1,8 @@
-# Transfer Learning 101
+# Transfer Learning in Computer Vision 101
 
 This is the entry point for our Intro to Transfer Learning workshop. The whole goal during this workshop is to go through the 
-first steps for image classification with Neural Networks and implement the building blocks from scratch. 
+first steps for image classification with Deep Learning and implement the 
+building blocks from scratch. 
 
 If you want to do some reading beforehand, you'll find the following useful:
 
@@ -49,7 +50,7 @@ Assuming you want to store your virtual environment under this same repo (FYI, o
 ```
 
 This script will:
- 1. download a [pretrained model](https://github.com/fchollet/deep-learning-models/releases/download/v0.6/mobilenet_1_0_224_tf_no_top.h5)
+1. download a [pretrained model](https://github.com/JonathanCMitchell/mobilenet_v2_keras/releases/download/v1.1/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_1.0_128_no_top.h5)
 and save it in the correct location.
 2. download a flower dataset, already [split](https://www.dropbox.com/s/n257xs7qvnlfik8/split_flowers.tgz?dl=0) into training, validation and testing sets, and extract it to the correct location.
 
@@ -92,12 +93,12 @@ tf_files/
 ## Finding your way ###
 `sh` is your entry point; there's a bash script to showcase the usage of the retraining code.
 
-`scripts` contains the retraining code; notice there have been major modifications in the API (Tensorflow has changed _a lot_, thankfully) 
-since the original tutorial was released.
+`scripts` contains the retraining code; notice there have been major 
+modifications in the API (Tensorflow has changed _a lot_, thankfully)  
+since the original tutorial was released, so only the interface should feel 
+familiar.
 
-`tf_files` contains data, models and tensorboard logs (training_summaries), just
- like in the original Tensorflow Transfer Learning [tutorial](https://www.tensorflow.org/tutorials/image_retraining). However, you will be able to see
- stacked plots on the Tensorboard.
+`tf_files` contains data, models and tensorboard logs (training_summaries).
 
 
 ### Warning
@@ -107,11 +108,11 @@ and training.
 
 ## Tensorboard ####
 Notice tf_files/training_summaries contains the following structure:
-   * architecture
-      * training_timestamp
-        * train
-        * validation
 
+experiment_label
+└── training_timestamp1
+    └── events_file
+    
 This way you will be able to compare the loss function and other metrics from different trainings in the same Tensoboard
 plot. If you don't fully follow this currently, don't worry, it will be explained during the Workshop.
 
@@ -138,7 +139,7 @@ Tensorboard (to see what's going on).
 
 We will be re-implementing different modules to load images, load pre-trained models and train.
 
-The starting point being branch `workshop_init`.
+The starting point being branch `workshop`.
 
 ## License ###
 Modifications are under the same Apache license as the original Tensorflow code.
