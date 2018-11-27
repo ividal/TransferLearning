@@ -19,8 +19,9 @@ import time
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.preprocessing.image import img_to_array, load_img
 from tensorflow.contrib.saved_model import load_keras_model
+from tensorflow.keras.preprocessing.image import img_to_array, load_img
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -33,7 +34,8 @@ def load_labels(label_file):
 
 def classify(args):
     image = img_to_array(load_img(args.image_path, target_size=(args.input_height, args.input_width)))
-    image = image.reshape([1, args.input_height, args.input_width, -1]) / 255.
+    image = image.reshape([1, args.input_height, args.input_width, -1])
+    image = preprocess_input(image)
 
     tf.logging.info("Loading model: {}".format(args.model_root_dir))
     model = load_keras_model(args.model_root_dir)
@@ -47,9 +49,9 @@ def classify(args):
 
     top_k = results.argsort()[-5:][::-1]
 
-    print(top_k)
+    tf.logging.info(top_k)
     labels = load_labels(args.labels)
-    print(labels)
+    tf.logging.debug(labels)
     print('\nEvaluation time (1-image): {:.3f}s\n'.format(end - start))
 
     for i in top_k:

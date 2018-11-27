@@ -15,11 +15,9 @@ ARCH="mobilenet"
 LABEL="$ARCH-bs_$BATCH_SIZE-lr_$LEARNING_RATE-opt_$OPTIMIZER"
 
 python -m scripts.retrain \
-  --model_dir=tf_files/models \
-  --bottleneck_dir=tf_files/bottlenecks \
+  --model_dir=tf_files/models/retrained \
   --summaries_dir=tf_files/training_summaries/$LABEL \
-  --output_graph="tf_files/retrained_graph_${WIDTH}.pb" \
-  --output_labels=tf_files/retrained_labels.npy \
+  --output_labels=tf_files/models/retrained/retrained_labels.npy \
   --image_dir=tf_files/split_flowers \
   --how_many_training_steps=$STEPS \
   --learning_rate=$LEARNING_RATE\

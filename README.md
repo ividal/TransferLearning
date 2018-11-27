@@ -13,13 +13,13 @@ If you want to do some reading beforehand, you'll find the following useful:
 
 1. Make sure you have wget installed: `sudo apt-get install wget`.
 2. Make sure you create a new virtual environment (instructions below).
-3. Install the dependencies with the `requirements.txt` in this repo.
-4. Notice for this workshop we will not need a GPU (all images are small and all trainings light).
-5. There are two sides for this workshop:
+3. Install the dependencies with the `requirements.txt` in this repo. This includes the latest Tensorflow.
+ **We will be using features released on the latest version (1.12).**
+4. There are two sides for this workshop:
     1. Using the current code as-is and understanding its effects (which will serve as an intro).
     2. Getting our hands dirty, re-implementing the code. We will start from branch `ẁorkshop_init`.
   
-Python 3.5+ should work (tested with 3.5 & 3.6). Instructions to create a Python3 based environment are given below.
+Python 3.5+ should work. Instructions to create a Python3 based environment are given below.
 
 (If, instead of this, you are used to and prefer using docker, go right ahead! 
 [Please choose one based on v1.12 from here.](https://hub.docker.com/r/tensorflow/tensorflow/)))
