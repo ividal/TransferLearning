@@ -109,9 +109,11 @@ and training.
 ## Tensorboard ####
 Notice tf_files/training_summaries contains the following structure:
 
+```
 experiment_label
 └── training_timestamp1
     └── events_file
+```
     
 This way you will be able to compare the loss function and other metrics from different trainings in the same Tensoboard
 plot. If you don't fully follow this currently, don't worry, it will be explained during the Workshop.
