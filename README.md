@@ -46,7 +46,7 @@ Assuming you want to store your virtual environment under this same repo (FYI, o
 ### Pre-trained model & new dataset ###
 **Linux users**: run this from the repo root folder:
 ```sh
-~/TransferLearning$ bash sh/download.sh
+~/TransferLearning$ bash sh/downloads.sh
 ```
 
 This script will:
