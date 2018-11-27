@@ -111,7 +111,8 @@ def create_data_feeders(train_dir, val_dir, test_dir, batch_size, image_size=224
         height_shift_range=0.1,
         shear_range=0.2,
         zoom_range=0.2,
-        horizontal_flip=True, preprocessing_function=preprocess_input)
+        horizontal_flip=True,
+        preprocessing_function=preprocess_input)
 
     datagen = tf.keras.preprocessing.image.ImageDataGenerator(preprocessing_function=preprocess_input)
 
@@ -307,7 +308,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--architecture",
         type=str,
-        default="mobilenet_1.0_224",
+        default="mobilenetv2_1.0_224",
         help="""\
       Which model architecture to use. For faster or smaller models, choose a MobileNet with the 
       form 'mobilenet_<parameter size>_<input_size>'. For example, 'mobilenet_1.0_224' will pick 

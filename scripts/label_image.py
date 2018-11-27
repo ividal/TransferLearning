@@ -15,7 +15,6 @@
 
 
 import argparse
-import time
 
 import numpy as np
 import tensorflow as tf
@@ -33,7 +32,8 @@ def load_labels(label_file):
 
 
 def classify(args):
-    image = img_to_array(load_img(args.image_path, target_size=(args.input_height, args.input_width)))
+    image = img_to_array(
+        load_img(args.image_path, target_size=(args.input_height, args.input_width)))
     image = image.reshape([1, args.input_height, args.input_width, -1])
     image = preprocess_input(image)
 
@@ -41,9 +41,7 @@ def classify(args):
     model = load_keras_model(args.model_root_dir)
     model.compile(optimizer="sgd", loss="categorical_crossentropy")
 
-    start = time.time()
     results = model.predict(image)
-    end = time.time()
 
     results = np.squeeze(results)
 
@@ -52,7 +50,6 @@ def classify(args):
     tf.logging.info(top_k)
     labels = load_labels(args.labels)
     tf.logging.debug(labels)
-    print('\nEvaluation time (1-image): {:.3f}s\n'.format(end - start))
 
     for i in top_k:
         print(labels[i], results[i])
@@ -62,14 +59,15 @@ if __name__ == "__main__":
     """
     The expected way and paths used to call this script is as follows:
     python -m scripts.label_image \
-      --model_root_dir="tf_files/retrained_graph_${WIDTH}.pb" \
-      --labels=tf_files/retrained_labels.txt \
-      --image="tf_files/flower_photos/daisy/3475870145_685a19116d.jpg"
+      --model_root_dir="tf_files/models/retrained" \
+      --labels=tf_files/models/retrained/retrained_labels.npy \
+      --image="tf_files/split_flowers/test/daisy/5547758_eea9edfd54_n.jpg"
     """
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--image_path", type=str, help="image to be processed", required=False)
-    parser.add_argument("--model_root_dir", type=str, help="graph/model to be executed", required=True)
+    parser.add_argument("--model_root_dir", type=str, help="directory where the SavedModel "
+                                                           "files are", required=True)
     parser.add_argument("--labels", type=str, help="name of file containing labels", required=False)
     parser.add_argument("--input_height", type=int, help="input height", default=224)
     parser.add_argument("--input_width", type=int, help="input width", default=224)
