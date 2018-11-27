@@ -5,10 +5,11 @@
 # Download the pre-trained model (no need to unzip the file):
 echo -e "\n--1.\tDownloading the pre-trained model into ./tf_files/models"
 mkdir -p $HOME/.keras/models
-MODEL=$HOME/.keras/models/mobilenet_1_0_224_tf_no_top.h5
+MODEL=$HOME/.keras/models/mobimobilenet_v2_weights_tf_dim_ordering_tf_kernels_1.0_128_no_top.h5
 if [ ! -f "$MODEL" ]; then
-    wget -P $HOME/.keras/models/ https://github.com/fchollet/deep-learning-models/releases/download/v0.6/mobilenet_1_0_224_tf_no_top.h5
+    wget -P $HOME/.keras/models/ https://github.com/JonathanCMitchell/mobilenet_v2_keras/releases/download/v1.1/mobilenet_v2_weights_tf_dim_ordering_tf_kernels_1.0_128_no_top.h5
 fi
+
 echo -e  "--Done.\t--"
 
 # Download the images and unzip them into the correct folders:
