@@ -202,6 +202,16 @@ def main(_):
                                  summary_dir=tb_dir)
 
     logger.info("\n===\tRetraining downloaded model.")
+    
+    steps_per_epoch = num_train_images // FLAGS.train_batch_size
+
+    model.fit_generator(
+        train_gen,
+        steps_per_epoch=steps_per_epoch,
+        epochs=FLAGS.how_many_training_steps // steps_per_epoch,
+        validation_data=val_gen,
+        validation_steps=5,
+        callbacks=callbacks)
 
     logger.info("\n===\tExporting the model so it can be served (TF Serving, TF Lite, etc.).")
 
