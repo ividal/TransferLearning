@@ -137,7 +137,17 @@ def create_data_feeders(train_dir, val_dir, test_dir, batch_size, image_size=224
 
 
 def create_callbacks(output_model_path, summary_dir):
-    pass
+    """
+    Enables tasks to be done after every batch
+    :param output_model_path: path to save checkpoints in
+    :param summary_dir: directory that tensorboard can monitor for events
+    :return: a list of callbacks
+    """
+    callbacks = [
+        tf.keras.callbacks.ModelCheckpoint(output_model_path, verbose=1),
+        tf.keras.callbacks.TensorBoard(log_dir=summary_dir, write_graph=True, write_images=True, histogram_freq=0)
+    ]
+    return callbacks
 
 
 def evaluate_model(path, image_gen):
@@ -187,6 +197,9 @@ def main(_):
                          optimizer=FLAGS.optimizer_name)
 
     logger.info("\n===\tPreparing Tensorboard callback, to monitor training.")
+
+    callbacks = create_callbacks(output_model_path=checkpoint_path,
+                                 summary_dir=tb_dir)
 
     logger.info("\n===\tRetraining downloaded model.")
 
