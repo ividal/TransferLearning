@@ -24,6 +24,8 @@ import sys
 import time
 import tensorflow as tf
 from tensorflow.keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
+from tensorflow.keras import backend as K
+
 
 tf.logging.set_verbosity(tf.logging.ERROR)
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
@@ -232,6 +234,8 @@ def main(_):
 
     logger.info("\n===\tReporting final model accuracy:")
     evaluate_model(FLAGS.model_dir, test_gen)
+    
+    K.clear_session()
 
 
 if __name__ == "__main__":
